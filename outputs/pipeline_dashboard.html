@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATP Tennis Prediction · Pipeline Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:           #080c14;
+  --bg-card:      #0f1623;
+  --bg-card-2:    #141e2e;
+  --border:       #1c2840;
+  --border-lit:   #2a3f60;
+  --text:         #e8edf5;
+  --text-sub:     #8a9bbf;
+  --text-muted:   #4a5878;
+  --amber:        #e6a817;
+  --amber-lt:     #f5c842;
+  --teal:         #0b8f82;
+  --teal-lt:      #1ed9c8;
+  --green:        #0eb86a;
+  --green-dk:     #0a8f52;
+  --green-glow:   rgba(14,184,106,0.18);
+  --blue:         #2f7bea;
+  --purple:       #7c5cfc;
+  --red:          #e5484d;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 3px; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Dot-grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(47,123,234,0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ambient glow top-centre */
+body::after {
+  content: '';
+  position: fixed;
+  top: -180px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(47,123,234,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 28px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── HEADER ─────────────────────────────────────────────── */
+header {
+  padding: 52px 0 36px;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--teal-lt);
+  margin-bottom: 10px;
+}
+h1 {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  background: linear-gradient(130deg, #e8edf5 10%, #7a8fba 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.15;
+}
+.subtitle {
+  color: var(--text-sub);
+  font-size: 15px;
+  margin-top: 10px;
+  max-width: 600px;
+}
+.kpis {
+  display: flex;
+  gap: 36px;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+.kpi { display: flex; flex-direction: column; gap: 2px; }
+.kpi-val {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  color: var(--text);
+}
+.kpi-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+
+/* ─── SECTION ─────────────────────────────────────────────── */
+section {
+  padding: 52px 0;
+  border-bottom: 1px solid var(--border);
+}
+section:last-of-type { border-bottom: none; }
+
+.sec-header { margin-bottom: 30px; }
+.sec-num {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--teal-lt);
+  opacity: .7;
+  margin-bottom: 4px;
+}
+.sec-title { font-size: 21px; font-weight: 700; color: var(--text); }
+.sec-desc  { font-size: 13.5px; color: var(--text-sub); margin-top: 5px; }
+
+/* ─── PIPELINE ────────────────────────────────────────────── */
+.pipe-stages {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.pipe-arrow {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  padding: 0 5px;
+  font-size: 16px;
+  user-select: none;
+}
+.stage {
+  flex: 1;
+  min-width: 100px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 15px 10px 13px;
+  cursor: pointer;
+  transition: border-color .18s, background .18s, box-shadow .18s, color .18s;
+  text-align: center;
+  color: var(--text-sub);
+  outline: none;
+}
+.stage:hover {
+  border-color: var(--teal);
+  background: var(--bg-card-2);
+  color: var(--text);
+}
+.stage.active {
+  border-color: var(--teal-lt);
+  background: rgba(11,143,130,.1);
+  color: var(--teal-lt);
+  box-shadow: 0 0 0 1px rgba(30,217,200,.25), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.stage-icon  { font-size: 20px; display: block; margin-bottom: 6px; }
+.stage-name  { font-size: 11.5px; font-weight: 700; display: block; }
+.stage-file  {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: block;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.stage.active .stage-file { color: rgba(30,217,200,.55); }
+
+.pipe-detail {
+  margin-top: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-lit);
+  border-left: 3px solid var(--teal-lt);
+  border-radius: 12px;
+  padding: 26px 28px;
+  min-height: 148px;
+  animation: fadeIn .22s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.pipe-detail h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--teal-lt);
+  margin-bottom: 12px;
+}
+.pipe-detail p {
+  font-size: 13.5px;
+  color: var(--text-sub);
+  line-height: 1.72;
+  margin-bottom: 8px;
+}
+.pipe-detail ul { list-style: none; margin-top: 8px; }
+.pipe-detail li {
+  font-size: 13px;
+  color: var(--text-sub);
+  padding: 4px 0 4px 18px;
+  position: relative;
+  line-height: 1.6;
+}
+.pipe-detail li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--teal);
+  font-size: 11px;
+  top: 6px;
+}
+code {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11.5px;
+  background: rgba(255,255,255,.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #a8b8e8;
+}
+
+/* ─── MODEL CARDS ─────────────────────────────────────────── */
+.model-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 36px;
+}
+.mc {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.mc:hover { border-color: var(--border-lit); }
+.mc.champ {
+  border-color: var(--green);
+  background: linear-gradient(150deg, #0f1a23, #0a1f14);
+}
+.mc.champ::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% -30%, rgba(14,184,106,.14), transparent 65%);
+  pointer-events: none;
+}
+.mc-badge {
+  position: absolute;
+  top: 15px; right: 15px;
+  background: var(--green);
+  color: #000;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+.mc-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 18px;
+  padding-right: 56px;
+}
+.mc.champ .mc-name { color: var(--green); }
+
+.mrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.mrow:last-child { border-bottom: none; padding-bottom: 0; }
+.mrow-lbl { font-size: 12px; color: var(--text-muted); padding-top: 3px; }
+.mrow-val { font-size: 17px; font-weight: 800; color: var(--text); text-align: right; }
+.mrow-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+.win-color { color: var(--green) !important; }
+
+/* ─── LOG-LOSS CHART ──────────────────────────────────────── */
+.ll-chart { margin-top: 4px; }
+.ll-chart-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-sub);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ll-chart-title span {
+  background: rgba(230,168,23,.15);
+  border: 1px solid rgba(230,168,23,.3);
+  color: var(--amber-lt);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.ll-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.ll-lbl {
+  width: 178px;
+  flex-shrink: 0;
+  font-size: 12.5px;
+  color: var(--text-sub);
+  text-align: right;
+}
+.ll-track {
+  flex: 1;
+  height: 30px;
+  background: rgba(255,255,255,.03);
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: visible;
+}
+/* Baseline marker on every track via ::after */
+.ll-track::after {
+  content: '';
+  position: absolute;
+  left: 92.4%;
+  top: -5px;
+  bottom: -5px;
+  width: 1.5px;
+  background: var(--amber);
+  opacity: .75;
+  z-index: 2;
+}
+.ll-track.first::before {
+  content: 'Random baseline 0.693';
+  position: absolute;
+  left: 92.4%;
+  top: -26px;
+  transform: translateX(-50%);
+  font-size: 9.5px;
+  color: var(--amber);
+  font-weight: 700;
+  white-space: nowrap;
+  z-index: 3;
+}
+.ll-bar {
+  height: 100%;
+  border-radius: 4px;
+  width: 0;
+  transition: width 1.1s cubic-bezier(.4,0,.2,1);
+  position: relative;
+  z-index: 1;
+}
+.ll-bar-lr { background: linear-gradient(90deg, #4f52c8, #7b7efa); }
+.ll-bar-rf { background: linear-gradient(90deg, var(--teal), var(--teal-lt)); }
+.ll-bar-gb { background: linear-gradient(90deg, var(--green-dk), var(--green)); }
+
+.ll-score {
+  width: 46px;
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-sub);
+  text-align: right;
+}
+.ll-note {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 14px;
+  font-style: italic;
+  line-height: 1.55;
+}
+
+/* x-axis labels */
+.ll-axis {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 8px;
+  padding-top: 10px;
+}
+.ll-axis-inner {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--text-muted);
+  padding: 0 0;
+}
+
+/* ─── FEATURE IMPORTANCE ──────────────────────────────────── */
+#feat-chart { margin-top: 4px; }
+.feat-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 9px;
+}
+.feat-lbl {
+  width: 240px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-sub);
+  text-align: right;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.feat-track {
+  flex: 1;
+  height: 26px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.feat-bar {
+  height: 100%;
+  border-radius: 4px;
+  width: 0;
+  transition: width .9s cubic-bezier(.4,0,.2,1);
+}
+.fb-amber { background: linear-gradient(90deg, var(--amber), var(--amber-lt)); }
+.fb-teal  { background: linear-gradient(90deg, var(--teal), var(--teal-lt)); }
+
+.feat-score {
+  width: 38px;
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.warn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(230,168,23,.12);
+  border: 1px solid rgba(230,168,23,.25);
+  color: var(--amber-lt);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.warn-box {
+  margin-top: 22px;
+  background: rgba(230,168,23,.07);
+  border: 1px solid rgba(230,168,23,.25);
+  border-left: 3px solid var(--amber);
+  border-radius: 10px;
+  padding: 16px 20px;
+  font-size: 13px;
+  color: #d4ab5e;
+  line-height: 1.68;
+}
+.warn-box strong { color: var(--amber-lt); }
+
+/* ─── DATASET STATS ───────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-align: center;
+  transition: border-color .18s;
+}
+.stat-card:hover { border-color: var(--border-lit); }
+.stat-big {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.015em;
+  color: var(--text);
+}
+.stat-lbl {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-top: 5px;
+}
+.stat-note {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 16px;
+  margin-bottom: 28px;
+}
+
+/* Timeline */
+.tl-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+  margin-bottom: 14px;
+}
+.tl-bar {
+  display: flex;
+  height: 52px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.tl-train {
+  width: 88.2%;
+  background: linear-gradient(90deg, #0e1e36, #152b4a);
+  border-right: 3px solid var(--amber);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1px;
+}
+.tl-test {
+  width: 11.8%;
+  background: linear-gradient(90deg, #0b1e14, #0e2618);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1px;
+}
+.tl-bar-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.85); }
+.tl-bar-sub   { font-size: 9.5px; color: rgba(255,255,255,.4); }
+
+.tl-axis {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 7px;
+  position: relative;
+}
+.tl-cutoff {
+  position: absolute;
+  left: 88.2%;
+  top: 0;
+  transform: translateX(-50%);
+  text-align: center;
+  color: var(--amber);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+/* ─── FOOTER ──────────────────────────────────────────────── */
+footer {
+  padding: 28px 0 36px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+footer a { color: var(--text-muted); text-decoration: none; }
+
+/* ─── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 780px) {
+  .model-cards { grid-template-columns: 1fr; }
+  .stats-grid  { grid-template-columns: repeat(2, 1fr); }
+  .pipe-stages { gap: 4px; }
+  .pipe-arrow  { display: none; }
+  .ll-lbl      { width: 128px; font-size: 11px; }
+  .feat-lbl    { width: 170px; font-size: 11px; }
+}
+
+/* ─── PLAYER EXPLORER ─────────────────────────────────────── */
+.pe-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.pe-search {
+  flex: 1;
+  min-width: 200px;
+  max-width: 420px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-lit);
+  border-radius: 10px;
+  padding: 11px 16px 11px 40px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .18s, box-shadow .18s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234a5878' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 13px center;
+}
+.pe-search::placeholder { color: var(--text-muted); }
+.pe-search:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(11,143,130,.12);
+}
+.pe-counter {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  margin-left: auto;
+}
+.pe-loading {
+  padding: 44px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+.pe-spinner {
+  display: inline-block;
+  width: 17px; height: 17px;
+  border: 2px solid var(--border-lit);
+  border-top-color: var(--teal-lt);
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.pe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: 13px;
+}
+.pe-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  padding: 17px 17px 15px;
+  cursor: pointer;
+  transition: border-color .18s, background .18s, box-shadow .18s;
+  user-select: none;
+}
+.pe-card:hover { border-color: var(--border-lit); background: var(--bg-card-2); }
+.pe-card.expanded {
+  border-color: var(--teal);
+  background: rgba(11,143,130,.04);
+  box-shadow: 0 0 0 1px rgba(30,217,200,.1);
+}
+.pe-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.pe-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+.pe-chevron {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-top: 3px;
+  transition: color .15s;
+}
+.pe-card.expanded .pe-chevron { color: var(--teal-lt); }
+.pe-stats-row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.pe-stat-big {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  color: var(--text);
+}
+.pe-stat-sub { font-size: 11px; color: var(--text-muted); }
+.pe-stat-sep { font-size: 12px; color: var(--border-lit); margin: 0 2px; }
+.pe-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.pe-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  letter-spacing: .02em;
+}
+.pe-tag-hard   { background:rgba(47,123,234,.1);  border-color:rgba(47,123,234,.22);  color:#7aaef8; }
+.pe-tag-clay   { background:rgba(230,168,23,.1);  border-color:rgba(230,168,23,.22);  color:var(--amber-lt); }
+.pe-tag-grass  { background:rgba(14,184,106,.1);  border-color:rgba(14,184,106,.22);  color:var(--green); }
+.pe-tag-carpet { background:rgba(124,92,252,.1);  border-color:rgba(124,92,252,.22);  color:#b09cfc; }
+.pe-tag-gs  { background:rgba(230,168,23,.12); border-color:rgba(230,168,23,.28); color:var(--amber-lt); }
+.pe-tag-mst { background:rgba(124,92,252,.12); border-color:rgba(124,92,252,.28); color:#b09cfc; }
+.pe-tag-tf  { background:rgba(14,184,106,.1);  border-color:rgba(14,184,106,.22);  color:var(--green); }
+
+/* expanded detail */
+.pe-detail {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+  animation: fadeIn .18s ease;
+}
+.pe-dg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.pe-dl {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 3px;
+}
+.pe-dv { font-size: 14px; font-weight: 700; color: var(--text); }
+.pe-surf-trio {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+.pe-surf-cell {
+  flex: 1;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 8px;
+  text-align: center;
+}
+.pe-surf-cell-name {
+  display: block;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.pe-surf-cell-pct { font-size: 15px; font-weight: 800; color: var(--text); }
+.pe-surf-cell.pe-hard  .pe-surf-cell-pct { color: #7aaef8; }
+.pe-surf-cell.pe-clay  .pe-surf-cell-pct { color: var(--amber-lt); }
+.pe-surf-cell.pe-grass .pe-surf-cell-pct { color: var(--green); }
+.pe-opps-label {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 7px;
+}
+.pe-opps { display: flex; flex-wrap: wrap; gap: 5px; }
+.pe-opp {
+  font-size: 11px;
+  color: var(--text-sub);
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 8px;
+}
+.pe-opp em { color: var(--text-muted); font-style: normal; font-size: 10px; }
+
+@media (max-width: 600px) {
+  .pe-grid { grid-template-columns: 1fr; }
+  .pe-dg   { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ─── MODEL EXPLAINER (S06) ──────────────────────────────────── */
+.me-tabs {
+  display: flex; gap: 2px; margin-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+.me-tab {
+  background: none; border: none;
+  border-bottom: 2.5px solid transparent;
+  color: var(--text-muted); font-size: 13px; font-weight: 600;
+  padding: 8px 18px 9px; cursor: pointer; margin-bottom: -1px; outline: none;
+  transition: color .15s, border-color .15s;
+}
+.me-tab:hover { color: var(--text-sub); }
+.me-tab.active { color: var(--teal-lt); border-bottom-color: var(--teal-lt); }
+/* ── ATP / WTA tour toggle tabs ── */
+.tour-tabs {
+  display: flex; gap: 4px; margin-bottom: 18px;
+}
+.tour-tab {
+  background: rgba(255,255,255,.04); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-muted); font-size: 12px; font-weight: 700;
+  padding: 5px 18px; cursor: pointer; letter-spacing: .06em; outline: none;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.tour-tab:hover { background: rgba(255,255,255,.08); color: var(--text-sub); }
+.tour-tab.active {
+  background: rgba(11,143,130,.15); border-color: var(--teal);
+  color: var(--teal-lt);
+}
+.me-panel { display: none; }
+.me-panel.active { display: block; animation: fadeIn .22s ease; }
+.me-plain-label {
+  display: inline-block; font-size: 12.5px; color: var(--text-sub);
+  font-style: italic; margin-bottom: 18px; padding: 8px 14px;
+  background: rgba(11,143,130,.07); border: 1px solid rgba(30,217,200,.18);
+  border-left: 3px solid var(--teal); border-radius: 7px;
+}
+.me-plain-label strong { font-style: normal; color: var(--teal-lt); }
+
+/* LR */
+.lr-canvas-wrap {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden; margin-bottom: 12px;
+}
+#lr-canvas { display: block; width: 100%; height: 290px; cursor: crosshair; touch-action: none; }
+.lr-footer {
+  display: flex; align-items: center; gap: 14px;
+  font-size: 13px; color: var(--text-sub); flex-wrap: wrap; margin-bottom: 4px;
+}
+.lr-acc-val { font-size: 24px; font-weight: 800; color: var(--green); }
+.lr-hint { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+/* RF */
+.rf-wrap {
+  display: flex; gap: 10px; overflow-x: auto;
+  padding-bottom: 6px; margin-bottom: 14px; align-items: flex-start;
+}
+.rf-tree {
+  flex-shrink: 0; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 11px; padding: 12px 10px 10px; text-align: center; width: 128px;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .38s, transform .38s, border-color .25s;
+}
+.rf-tree.show { opacity: 1; transform: none; }
+.rf-tree.vote-win  { border-color: rgba(14,184,106,.5); }
+.rf-tree.vote-loss { border-color: rgba(229,72,77,.4); }
+.rf-tree-lbl {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;
+}
+.rf-vote {
+  margin-top: 8px; font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px; display: inline-block;
+}
+.rf-vote.win  { background: rgba(14,184,106,.15); color: var(--green); }
+.rf-vote.loss { background: rgba(229,72,77,.12);  color: var(--red); }
+.rf-tally {
+  background: var(--bg-card); border: 1px solid var(--border-lit);
+  border-radius: 11px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
+  opacity: 0; transition: opacity .5s; flex-wrap: wrap;
+}
+.rf-tally.show { opacity: 1; }
+.rf-pip {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+}
+.rf-pip.win  { background: rgba(14,184,106,.2);  border: 1.5px solid var(--green); color: var(--green); }
+.rf-pip.loss { background: rgba(229,72,77,.15); border: 1.5px solid var(--red);   color: var(--red); }
+.rf-result { font-size: 15px; font-weight: 800; color: var(--green); margin-left: 4px; }
+
+/* GB */
+.gb-seq {
+  display: flex; align-items: flex-start; gap: 0;
+  overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px;
+}
+.gb-tw { display: flex; align-items: center; flex-shrink: 0; }
+.gb-arrow-el {
+  font-size: 20px; color: var(--text-muted); padding: 0 6px;
+  opacity: 0; transition: opacity .35s;
+}
+.gb-arrow-el.show { opacity: 1; }
+.gb-tree {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 11px; padding: 13px 11px 11px; min-width: 138px;
+  opacity: 0; transform: scale(.93);
+  transition: opacity .38s, transform .38s, border-color .3s;
+}
+.gb-tree.show { opacity: 1; transform: none; }
+.gb-tree.current { border-color: var(--blue); box-shadow: 0 0 0 1px rgba(47,123,234,.18); }
+.gb-tree-lbl {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;
+}
+.gb-dots {
+  display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin: 6px 0;
+}
+.gb-dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: rgba(74,88,120,.2); transition: background .25s;
+}
+.gb-dot.c { background: rgba(14,184,106,.75); }
+.gb-dot.w { background: rgba(229,72,77,.75); }
+.gb-dot.f { background: rgba(47,123,234,.75); }
+.gb-tree-sub { font-size: 10.5px; color: var(--text-muted); text-align: center; margin-top: 5px; }
+.gb-meter {
+  background: var(--bg-card); border: 1px solid var(--border-lit);
+  border-radius: 11px; padding: 16px 18px; opacity: 0; transition: opacity .4s;
+}
+.gb-meter.show { opacity: 1; }
+.gb-meter-hdr {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: var(--text-sub); margin-bottom: 9px;
+}
+.gb-meter-val { font-size: 18px; font-weight: 800; color: var(--teal-lt); }
+.gb-meter-track {
+  height: 18px; background: rgba(255,255,255,.04);
+  border: 1px solid var(--border); border-radius: 9px; overflow: hidden;
+}
+.gb-meter-fill {
+  height: 100%; width: 0%; border-radius: 9px;
+  background: linear-gradient(90deg, var(--blue), var(--teal-lt));
+  transition: width .65s cubic-bezier(.4,0,.2,1);
+}
+
+/* ─── PREDICT (S07) ─────────────────────────────────────────── */
+.pred-server-row {
+  display: flex; align-items: center; gap: 9px;
+  margin-bottom: 18px; font-size: 12px; color: var(--text-muted);
+}
+.pred-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--text-muted); flex-shrink: 0;
+  transition: background .4s;
+}
+.pred-dot.ok  { background: var(--green); }
+.pred-dot.err { background: var(--red); }
+.pred-lbl {
+  display: block; font-size: 10.5px; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 5px;
+}
+.pred-input {
+  width: 100%; background: var(--bg-card); border: 1px solid var(--border-lit);
+  border-radius: 9px; padding: 10px 13px; color: var(--text);
+  font-size: 13.5px; outline: none; font-family: inherit;
+  transition: border-color .17s, box-shadow .17s;
+}
+.pred-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(11,143,130,.11); }
+.pred-input::placeholder { color: var(--text-muted); }
+select.pred-input { cursor: pointer; }
+.pred-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;
+}
+.pred-field { position: relative; }
+.pred-ac {
+  position: absolute; top: calc(100% + 3px); left: 0; right: 0;
+  background: var(--bg-card-2); border: 1px solid var(--border-lit);
+  border-radius: 9px; z-index: 200; max-height: 190px; overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,.45); display: none;
+}
+.pred-ac.open { display: block; }
+.pred-ac-item {
+  padding: 9px 13px; font-size: 13px; color: var(--text-sub);
+  cursor: pointer; transition: background .1s, color .1s;
+}
+.pred-ac-item:hover, .pred-ac-item.hi { background: rgba(11,143,130,.12); color: var(--text); }
+.pred-sel-row {
+  display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; align-items: flex-end;
+}
+.pred-sel-field { display: flex; flex-direction: column; gap: 5px; }
+.pred-btn {
+  background: linear-gradient(135deg, #0b8f82, #2f7bea);
+  color: #fff; border: none; border-radius: 9px;
+  padding: 11px 26px; font-size: 13.5px; font-weight: 700;
+  cursor: pointer; letter-spacing: .02em; white-space: nowrap;
+  transition: opacity .18s, transform .1s;
+}
+.pred-btn:hover { opacity: .87; }
+.pred-btn:active { transform: scale(.97); }
+.pred-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+.pred-spin-row {
+  display: none; align-items: center; gap: 12px;
+  font-size: 13px; color: var(--text-muted); padding: 14px 0;
+}
+.pred-spin-row.show { display: flex; }
+.pred-err {
+  background: rgba(229,72,77,.09); border: 1px solid rgba(229,72,77,.25);
+  border-radius: 9px; padding: 12px 16px; font-size: 13px; color: #e06060;
+  display: none; margin-top: 12px;
+}
+.pred-err.show { display: block; }
+.pred-card {
+  background: var(--bg-card); border: 1px solid var(--border-lit);
+  border-radius: 13px; padding: 22px; margin-top: 16px;
+  display: none; animation: fadeIn .28s ease;
+}
+.pred-card.show { display: block; }
+.pred-matchup {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  gap: 14px; align-items: center; margin-bottom: 20px;
+}
+.pred-player { text-align: center; }
+.pred-pname { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 5px; line-height: 1.3; }
+.pred-pprob { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+.pred-pbar-wrap { height: 7px; background: rgba(255,255,255,.06); border-radius: 4px; overflow: hidden; margin-top: 7px; }
+.pred-pbar { height: 100%; border-radius: 4px; width: 0%; transition: width .85s cubic-bezier(.4,0,.2,1); }
+.pred-vs-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-align: center; }
+.pred-feat-section { padding-top: 16px; border-top: 1px solid var(--border); }
+.pred-feat-hdr {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;
+}
+.pred-feat-grid {
+  display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 2px 8px;
+  font-size: 11.5px;
+}
+.pred-feat-col-hdr {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--text-muted); padding-bottom: 5px;
+}
+.pred-feat-lbl  { color: var(--text-muted); padding: 3px 0; }
+.pred-feat-val  { color: var(--text-sub);   padding: 3px 0; text-align: right; }
+.pred-feat-diff { padding: 3px 0; text-align: right; font-weight: 600; }
+.pred-feat-diff.pos { color: var(--green); }
+.pred-feat-diff.neg { color: var(--red); }
+.pred-feat-diff.neu { color: var(--text-muted); }
+.pred-meta-row {
+  display: flex; gap: 18px; flex-wrap: wrap;
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-muted);
+}
+.pred-meta-row strong { color: var(--text-sub); }
+@media (max-width: 600px) {
+  .pred-grid    { grid-template-columns: 1fr; }
+  .pred-matchup { gap: 8px; }
+  .pred-pname   { font-size: 13px; }
+  .pred-pprob   { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ═══════ HEADER ═══════════════════════════════════════════ -->
+<header>
+  <div class="eyebrow">Machine Learning Pipeline · Tennis Prediction</div>
+  <h1>ATP Match Outcome Predictor</h1>
+  <p class="subtitle">34 years of ATP tour data, 11 engineered features, and gradient-boosted trees — predicting match outcomes on held-out 2021–2024 matches.</p>
+  <div class="kpis">
+    <div class="kpi">
+      <span class="kpi-val">108,375</span>
+      <span class="kpi-label">ATP Matches</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-val">1991–2024</span>
+      <span class="kpi-label">Year Range</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-val">11</span>
+      <span class="kpi-label">Features</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-val" style="color:var(--green)">81.8%</span>
+      <span class="kpi-label">Test Accuracy</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-val" style="color:var(--green)">0.922</span>
+      <span class="kpi-label">AUC Score</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-val" style="color:var(--green)">0.355</span>
+      <span class="kpi-label">Log-Loss</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════ SECTION 1 · PIPELINE ════════════════════════════ -->
+<section id="s-pipeline">
+  <div class="sec-header">
+    <div class="sec-num">Section 01</div>
+    <div class="sec-title">Pipeline Architecture</div>
+    <div class="sec-desc">Click any stage to see what happens there in plain English</div>
+  </div>
+
+  <div class="pipe-stages" id="pipe-stages">
+    <button class="stage" onclick="pickStage(0)">
+      <span class="stage-icon">📂</span>
+      <span class="stage-name">Raw CSVs</span>
+      <span class="stage-file">tennis_atp/</span>
+    </button>
+    <div class="pipe-arrow">→</div>
+    <button class="stage" onclick="pickStage(1)">
+      <span class="stage-icon">⚙️</span>
+      <span class="stage-name">Data Loader</span>
+      <span class="stage-file">data_loader.py</span>
+    </button>
+    <div class="pipe-arrow">→</div>
+    <button class="stage" onclick="pickStage(2)">
+      <span class="stage-icon">🔬</span>
+      <span class="stage-name">Feature Eng.</span>
+      <span class="stage-file">features.py</span>
+    </button>
+    <div class="pipe-arrow">→</div>
+    <button class="stage" onclick="pickStage(3)">
+      <span class="stage-icon">🎯</span>
+      <span class="stage-name">Model Training</span>
+      <span class="stage-file">train.py</span>
+    </button>
+    <div class="pipe-arrow">→</div>
+    <button class="stage" onclick="pickStage(4)">
+      <span class="stage-icon">📈</span>
+      <span class="stage-name">Prediction</span>
+      <span class="stage-file">best_model.pkl</span>
+    </button>
+  </div>
+
+  <div class="pipe-detail" id="pipe-detail"></div>
+</section>
+
+<!-- ═══════ SECTION 2 · MODEL COMPARISON ════════════════════ -->
+<section id="s-models">
+  <div class="sec-header">
+    <div class="sec-num">Section 02</div>
+    <div class="sec-title">Model Comparison</div>
+    <div class="sec-desc">All three models trained on identical features with a hard chronological cutoff at January 1 2021. Lower log-loss wins.</div>
+  </div>
+
+  <div class="model-cards">
+    <!-- Logistic Regression -->
+    <div class="mc">
+      <div class="mc-name">Logistic Regression</div>
+      <div class="mrow">
+        <span class="mrow-lbl">Log-Loss</span>
+        <div>
+          <div class="mrow-val">0.6190</div>
+          <div class="mrow-sub">89% of random baseline</div>
+        </div>
+      </div>
+      <div class="mrow">
+        <span class="mrow-lbl">AUC</span>
+        <div class="mrow-val">0.7110</div>
+      </div>
+      <div class="mrow">
+        <span class="mrow-lbl">Accuracy</span>
+        <div class="mrow-val">64.9%</div>
+      </div>
+    </div>
+
+    <!-- Random Forest -->
+    <div class="mc">
+      <div class="mc-name">Random Forest</div>
+      <div class="mrow">
+        <span class="mrow-lbl">Log-Loss</span>
+        <div>
+          <div class="mrow-val">0.4797</div>
+          <div class="mrow-sub">31% better than log. reg.</div>
+        </div>
+      </div>
+      <div class="mrow">
+        <span class="mrow-lbl">AUC</span>
+        <div class="mrow-val">0.8730</div>
+      </div>
+      <div class="mrow">
+        <span class="mrow-lbl">Accuracy</span>
+        <div class="mrow-val">78.9%</div>
+      </div>
+    </div>
+
+    <!-- Gradient Boosting -->
+    <div class="mc champ">
+      <div class="mc-badge">Champion</div>
+      <div class="mc-name">Gradient Boosting</div>
+      <div class="mrow">
+        <span class="mrow-lbl">Log-Loss</span>
+        <div>
+          <div class="mrow-val win-color">0.3550</div>
+          <div class="mrow-sub" style="color:rgba(14,184,106,.55)">49% below random baseline</div>
+        </div>
+      </div>
+      <div class="mrow">
+        <span class="mrow-lbl">AUC</span>
+        <div class="mrow-val win-color">0.9217</div>
+      </div>
+      <div class="mrow">
+        <span class="mrow-lbl">Accuracy</span>
+        <div class="mrow-val win-color">81.8%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log-loss bar chart -->
+  <div class="ll-chart">
+    <div class="ll-chart-title">
+      Log-Loss on 2021–2024 test set
+      <span>lower = better</span>
+    </div>
+
+    <!-- invisible axis spacer -->
+    <div style="display:flex; gap:14px; margin-bottom:32px;">
+      <div style="width:178px; flex-shrink:0;"></div>
+      <div class="ll-axis-inner" style="flex:1; position:relative; height:1px;">
+        <div style="position:absolute; left:0;     font-size:9.5px; color:var(--text-muted);">0.0</div>
+        <div style="position:absolute; left:26.7%; font-size:9.5px; color:var(--text-muted);">0.2</div>
+        <div style="position:absolute; left:53.3%; font-size:9.5px; color:var(--text-muted);">0.4</div>
+        <div style="position:absolute; left:80%;   font-size:9.5px; color:var(--text-muted);">0.6</div>
+        <div style="position:absolute; left:100%;  font-size:9.5px; color:var(--text-muted); transform:translateX(-100%);">0.75</div>
+      </div>
+    </div>
+
+    <div class="ll-row">
+      <div class="ll-lbl">Logistic Regression</div>
+      <div class="ll-track first">
+        <div class="ll-bar ll-bar-lr" data-w="82.5"></div>
+      </div>
+      <div class="ll-score">0.619</div>
+    </div>
+    <div class="ll-row">
+      <div class="ll-lbl">Random Forest</div>
+      <div class="ll-track">
+        <div class="ll-bar ll-bar-rf" data-w="63.9"></div>
+      </div>
+      <div class="ll-score">0.480</div>
+    </div>
+    <div class="ll-row">
+      <div class="ll-lbl">Gradient Boosting</div>
+      <div class="ll-track">
+        <div class="ll-bar ll-bar-gb" data-w="47.3"></div>
+      </div>
+      <div class="ll-score" style="color:var(--green)">0.355</div>
+    </div>
+
+    <p class="ll-note">
+      The amber vertical line marks the <strong style="color:var(--amber-lt)">random baseline (log-loss = 0.693)</strong> — what a model achieves by always predicting 50% probability regardless of context. Gradient Boosting reduces this by 48.8%, indicating it has learned genuine predictive signal from the features.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════ SECTION 3 · FEATURE IMPORTANCE ══════════════════ -->
+<section id="s-features">
+  <div class="sec-header">
+    <div class="sec-num">Section 03</div>
+    <div class="sec-title">Feature Importance</div>
+    <div class="sec-desc">Gradient Boosting impurity-based importances across all 11 features. Top 3 highlighted in amber — they account for 64% of total importance.</div>
+  </div>
+
+  <div id="feat-chart"></div>
+
+  <div class="warn-box">
+    <strong>⚠ Potential data artifact: <code style="color:var(--amber-lt); background:rgba(230,168,23,.1);">days_rest_diff</code> (rank #1, importance 0.28)</strong><br><br>
+    This feature ranks first despite being a simple fatigue proxy. The likely cause: players appearing in the dataset for the <em>first time</em> receive a default fill value of 14 days rest (no prior match found). If first-appearances are systematically skewed toward winners or losers — for example, because talented newcomers win their debut matches more often — the model may be capturing a dataset artefact rather than genuine rest-day signal.<br><br>
+    <strong>Recommended fix:</strong> add a <code>career_matches_to_date</code> feature so the model can discount early-career observations, and re-evaluate whether <code>days_rest_diff</code> retains high importance on players with ≥ 20 career matches on record.
+  </div>
+</section>
+
+<!-- ═══════ SECTION 4 · DATASET STATS ═══════════════════════ -->
+<section id="s-dataset">
+  <div class="sec-header">
+    <div class="sec-num">Section 04</div>
+    <div class="sec-title">Dataset Statistics</div>
+    <div class="sec-desc">Full ATP tour match history sourced from Jeff Sackmann's tennis_atp repository</div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-big">108,375</div>
+      <div class="stat-lbl">Total Matches</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-big">34</div>
+      <div class="stat-lbl">Years of Data</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-big" style="color:var(--blue)">127,730</div>
+      <div class="stat-lbl">Training Rows *</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-big" style="color:var(--green)">15,612</div>
+      <div class="stat-lbl">Test Rows *</div>
+    </div>
+  </div>
+
+  <p class="stat-note">* After perspective mirroring — each raw match produces two training rows (winner view target=1, loser view target=0) to create balanced binary labels. Test set: 7,806 per class.</p>
+
+  <div class="tl-title">Train / Test Chronological Split (proportional)</div>
+  <div class="tl-bar">
+    <div class="tl-train">
+      <div class="tl-bar-label">Training Set</div>
+      <div class="tl-bar-sub">1991 – 2020 · 30 years · 127,730 rows</div>
+    </div>
+    <div class="tl-test">
+      <div class="tl-bar-label">Test</div>
+      <div class="tl-bar-sub">2021 – 2024</div>
+    </div>
+  </div>
+  <div class="tl-axis">
+    <span>1991</span>
+    <div class="tl-cutoff">↑ cutoff<br>Jan 2021</div>
+    <span>2024</span>
+  </div>
+</section>
+
+<!-- ═══════ SECTION 5 · PLAYER EXPLORER ══════════════════════ -->
+<section id="s-players">
+  <div class="sec-header">
+    <div class="sec-num">Section 05</div>
+    <div class="sec-title">Player Explorer</div>
+    <div class="sec-desc">Browse every ATP player in the dataset. Click a card to expand full career details.</div>
+  </div>
+
+  <div class="tour-tabs">
+    <button class="tour-tab active" id="pe-tab-atp" onclick="peSetTour('atp')">ATP</button>
+    <button class="tour-tab"        id="pe-tab-wta" onclick="peSetTour('wta')">WTA</button>
+  </div>
+
+  <div class="pe-search-wrap">
+    <input class="pe-search" id="pe-input" type="text" placeholder="Search player name…" autocomplete="off" spellcheck="false">
+    <span class="pe-counter" id="pe-counter"></span>
+  </div>
+
+  <div id="pe-loading" class="pe-loading">
+    <span class="pe-spinner"></span>Loading player data…
+  </div>
+  <div class="pe-grid" id="pe-grid"></div>
+</section>
+
+<!-- ═══════ SECTION 6 · MODEL EXPLAINER ════════════════════════ -->
+<section id="s-explainer">
+  <div class="sec-header">
+    <div class="sec-num">Section 06</div>
+    <div class="sec-title">How Each Model Works</div>
+    <div class="sec-desc">Interactive visualisations for each algorithm. Switch tabs to explore — animations replay on each visit.</div>
+  </div>
+
+  <div class="me-tabs">
+    <button class="me-tab active" data-p="lr" onclick="meTab('lr')">Logistic Regression</button>
+    <button class="me-tab"        data-p="rf" onclick="meTab('rf')">Random Forest</button>
+    <button class="me-tab"        data-p="gb" onclick="meTab('gb')">Gradient Boosting</button>
+  </div>
+
+  <!-- ── LR ── -->
+  <div class="me-panel active" id="me-lr">
+    <p class="me-plain-label"><strong>Plain English:</strong> Draws one straight line to separate wins from losses</p>
+    <div class="lr-canvas-wrap">
+      <canvas id="lr-canvas"></canvas>
+    </div>
+    <div class="lr-footer">
+      Line accuracy:&nbsp;<span class="lr-acc-val" id="lr-acc">—</span>%
+      <span class="lr-hint">Drag the ● handles on the left / right edges to tilt the boundary</span>
+    </div>
+  </div>
+
+  <!-- ── RF ── -->
+  <div class="me-panel" id="me-rf">
+    <p class="me-plain-label"><strong>Plain English:</strong> Asks 100 trees, takes a majority vote</p>
+    <div class="rf-wrap" id="rf-wrap"></div>
+    <div class="rf-tally" id="rf-tally">
+      <div id="rf-pips" style="display:flex;gap:6px;align-items:center"></div>
+      <span style="font-size:18px;color:var(--text-muted);margin:0 6px">→</span>
+      <span class="rf-result" id="rf-result"></span>
+    </div>
+  </div>
+
+  <!-- ── GB ── -->
+  <div class="me-panel" id="me-gb">
+    <p class="me-plain-label"><strong>Plain English:</strong> Each tree fixes the mistakes of the last</p>
+    <div class="gb-seq" id="gb-seq"></div>
+    <div class="gb-meter" id="gb-meter">
+      <div class="gb-meter-hdr">
+        <span>Cumulative model confidence (P1 wins)</span>
+        <span class="gb-meter-val" id="gb-conf">0%</span>
+      </div>
+      <div class="gb-meter-track"><div class="gb-meter-fill" id="gb-fill"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SECTION 7 · PREDICT ════════════════════════════════ -->
+<section id="s-predict">
+  <div class="sec-header">
+    <div class="sec-num">Section 07</div>
+    <div class="sec-title">Predict a Match</div>
+    <div class="sec-desc">Select two players and match context — the trained GradientBoosting model computes win probabilities from real career stats. Run <code style="font-size:11px">python src/prediction_server.py</code> in a separate terminal to enable predictions.</div>
+  </div>
+
+  <div class="pred-server-row">
+    <div class="pred-dot" id="pred-dot"></div>
+    <span id="pred-server-txt">Checking server…</span>
+  </div>
+
+  <div class="tour-tabs">
+    <button class="tour-tab active" id="pred-tab-atp" onclick="predSetTour('atp')">ATP</button>
+    <button class="tour-tab"        id="pred-tab-wta" onclick="predSetTour('wta')">WTA</button>
+  </div>
+
+  <div class="pred-grid">
+    <div>
+      <label class="pred-lbl">Player 1</label>
+      <div class="pred-field" id="p1-field">
+        <input class="pred-input" id="p1-inp" type="text" placeholder="Search player…" autocomplete="off">
+        <div class="pred-ac" id="p1-ac"></div>
+      </div>
+    </div>
+    <div>
+      <label class="pred-lbl">Player 2</label>
+      <div class="pred-field" id="p2-field">
+        <input class="pred-input" id="p2-inp" type="text" placeholder="Search player…" autocomplete="off">
+        <div class="pred-ac" id="p2-ac"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pred-sel-row">
+    <div class="pred-sel-field">
+      <label class="pred-lbl" for="pred-surf">Surface</label>
+      <select class="pred-input" id="pred-surf" style="width:148px">
+        <option>Hard</option>
+        <option>Clay</option>
+        <option>Grass</option>
+      </select>
+    </div>
+    <div class="pred-sel-field">
+      <label class="pred-lbl" for="pred-lvl">Level</label>
+      <select class="pred-input" id="pred-lvl" style="width:192px">
+        <option value="A">Regular (250/500)</option>
+        <option value="M">Masters 1000</option>
+        <option value="G">Grand Slam</option>
+        <option value="F">Tour Finals</option>
+      </select>
+    </div>
+    <div class="pred-sel-field" style="justify-content:flex-end">
+      <button class="pred-btn" id="pred-btn" onclick="predGo()">Predict →</button>
+    </div>
+  </div>
+
+  <div class="pred-spin-row" id="pred-spin">
+    <span class="pe-spinner"></span> Running model…
+  </div>
+  <div class="pred-err" id="pred-err"></div>
+
+  <div class="pred-card" id="pred-card">
+    <div class="pred-matchup" id="pred-matchup"></div>
+    <div id="pred-factors"></div>
+    <div class="pred-meta-row" id="pred-meta"></div>
+  </div>
+</section>
+
+<footer>
+  Built with pure HTML / CSS / JS · No external dependencies<br>
+  Data: <a href="#">Jeff Sackmann's tennis_atp</a> ·
+  Models: scikit-learn GradientBoostingClassifier ·
+  Pipeline: Python / pandas / numpy
+</footer>
+
+</div><!-- /wrap -->
+
+<script>
+// ── Pipeline stage copy ──────────────────────────────────────
+const STAGES = [
+  {
+    title: "Raw CSVs — Jeff Sackmann's tennis_atp repository",
+    body: `
+      <p>The raw data comes from <strong>Jeff Sackmann's tennis_atp</strong> GitHub repository, cloned locally to <code>data/raw/tennis_atp/</code>. It contains 34 annual CSV files — <code>atp_matches_1991.csv</code> through <code>atp_matches_2024.csv</code> — covering every ATP tour-level match played over that span.</p>
+      <ul>
+        <li><strong>108,375 match records</strong> across 34 years of ATP tour play</li>
+        <li>Each row encodes: tournament name, surface (Hard / Clay / Grass / Carpet), tournament level (G = Grand Slam, M = Masters 1000, F = Tour Finals, A = regular 250/500, D = Davis Cup), both player IDs, world rankings, ages, match score, serve statistics (aces, double faults, first-serve %, break points), and more</li>
+        <li>Companion files: <code>atp_players.csv</code> (player registry — Sackmann's file has no header, so column names are injected on load) and <code>atp_rankings_current.csv</code></li>
+        <li>Key structural constraint: each row always lists a <em>winner</em> and a <em>loser</em> — there is no neutral "player A vs player B" framing. This requires explicit mirroring during training to produce balanced labels.</li>
+      </ul>`
+  },
+  {
+    title: "Data Loader — data_loader.py",
+    body: `
+      <p><code>load_all_matches(1991, 2024)</code> is the primary entry point. It iterates the year range, reads each CSV file with pandas, tags every row with a <code>year</code> column, concatenates everything into one DataFrame, and sorts chronologically by <code>tourney_date</code> (an integer in YYYYMMDD format).</p>
+      <ul>
+        <li>Result cached to <code>data/processed/all_matches.csv</code> via <code>build_processed_dataset()</code> — subsequent pipeline runs load a single file in milliseconds rather than iterating 34 raw CSVs</li>
+        <li>Missing year files are skipped with a warning rather than crashing — future-proof as new seasons are added</li>
+        <li><code>load_players()</code> injects column names for Sackmann's headerless player CSV: <code>player_id, first_name, last_name, hand, dob, country</code></li>
+        <li>The chronological sort done here is the single source of truth — downstream feature engineering relies on this ordering and does not re-sort</li>
+      </ul>`
+  },
+  {
+    title: "Feature Engineering — features.py · extract_all_features()",
+    body: `
+      <p>All 11 features maintain strict chronological integrity — no match can see any future data. Three data leakage bugs were identified and fixed before the first real training run: post-match ELO lookback, form windows including the current match, and random train/test splitting.</p>
+      <ul>
+        <li><strong>ELO ratings:</strong> computed in chronological order; a <em>pre-match snapshot</em> is stored before each rating update, so features reflect the rating <em>before</em> the match outcome, not after</li>
+        <li><strong>Rolling form &amp; fatigue:</strong> <code>groupby + rolling(closed='left')</code> — the <code>closed='left'</code> parameter excludes the current match from its own form window</li>
+        <li><strong>Surface win rate:</strong> expanding <code>cumsum</code> aggregated by (player, surface, day) so all same-day matches see identical pre-day history, eliminating intra-day ordering leakage</li>
+        <li><strong>H2H record:</strong> <code>cumsum − current</code> per (player, opponent) pair; zeroed when fewer than 3 prior meetings (insufficient sample to trust the signal)</li>
+        <li><strong>Label balancing via mirroring:</strong> each match row is duplicated from the loser's perspective — winner/loser columns swapped, all <code>*_diff</code> columns negated, <code>target = 0</code>. Without this step every label is 1 and the model learns nothing.</li>
+      </ul>`
+  },
+  {
+    title: "Model Training — train.py",
+    body: `
+      <p>Three scikit-learn classifiers are trained on the same 11-feature set and compared by log-loss on a completely held-out 2021–2024 test set. The chronological hard-cutoff split is essential — random splitting would allow future match results to leak into training.</p>
+      <ul>
+        <li><strong>Train:</strong> 127,730 rows covering all matches before January 1, 2021 (1991–2020)</li>
+        <li><strong>Test:</strong> 15,612 rows covering 2021–2024 — perfectly balanced at 7,806 per class thanks to mirroring</li>
+        <li>Logistic Regression uses <code>StandardScaler</code> fitted on train data only — test statistics never influence the scaling parameters</li>
+        <li>All three models use default scikit-learn hyperparameters as a fair baseline comparison; no tuning was performed yet</li>
+        <li>Winner selected by lowest log-loss: <strong>Gradient Boosting at 0.3550</strong>, serialized to <code>models/best_model.pkl</code> alongside the feature column list, scaler, and a flag indicating whether scaling should be applied at inference time</li>
+      </ul>`
+  },
+  {
+    title: "Prediction — models/best_model.pkl",
+    body: `
+      <p>To predict a new match outcome, load the pickle bundle, build the same 11-feature vector using the feature engineering pipeline, and call <code>model.predict_proba()</code>. The output is a probability in [0, 1] that the designated player wins.</p>
+      <ul>
+        <li>Gradient Boosting achieves <strong>AUC 0.922</strong> and <strong>log-loss 0.355</strong> on four full years of completely unseen 2021–2024 matches — a meaningful result given that ATP betting markets themselves typically hover around AUC 0.75–0.82</li>
+        <li>The pickle bundles four objects: <code>model</code> (fitted GradientBoostingClassifier), <code>feature_cols</code> (ordered list of 11 feature names), <code>scaler</code> (fitted StandardScaler), <code>uses_scaling</code> (boolean)</li>
+        <li>For comparison: a naive model always predicting 50% probability scores log-loss = 0.693 — the model cuts this by 48.8%</li>
+        <li>Identified next steps: calibrate probabilities with Platt scaling or isotonic regression; add surface-specific ELO tracks; investigate <code>days_rest_diff</code> data artefact; experiment with player embeddings</li>
+      </ul>`
+  }
+];
+
+function pickStage(idx) {
+  const btns = document.querySelectorAll('.stage');
+  btns.forEach((b, i) => b.classList.toggle('active', i === idx));
+  const panel = document.getElementById('pipe-detail');
+  const s = STAGES[idx];
+  panel.innerHTML = `<h3>${s.title}</h3>${s.body}`;
+}
+pickStage(0); // default on load
+
+// ── Feature chart ────────────────────────────────────────────
+const FEATURES = [
+  { name: 'days_rest_diff',             v: 0.28, warn: true  },
+  { name: 'elo_diff',                   v: 0.24, warn: false },
+  { name: 'h2h_diff',                   v: 0.12, warn: false },
+  { name: 'winner_rank_diff',           v: 0.09, warn: false },
+  { name: 'winner_surface_winrate_diff',v: 0.08, warn: false },
+  { name: 'winner_age_diff',            v: 0.06, warn: false },
+  { name: 'form_diff',                  v: 0.05, warn: false },
+  { name: 'is_grand_slam',              v: 0.04, warn: false },
+  { name: 'is_masters',                 v: 0.03, warn: false },
+  { name: 'best_of',                    v: 0.01, warn: false },
+  { name: 'is_other',                   v: 0.01, warn: false },
+];
+
+(function buildFeatChart() {
+  const MAX = 0.28;
+  const el  = document.getElementById('feat-chart');
+  FEATURES.forEach((f, i) => {
+    const pct  = ((f.v / MAX) * 100).toFixed(1);
+    const cls  = i < 3 ? 'fb-amber' : 'fb-teal';
+    const warn = f.warn
+      ? `<span class="warn-chip" title="Potential data artifact — see note below">⚠ artifact?</span>`
+      : '';
+    el.innerHTML += `
+      <div class="feat-row">
+        <div class="feat-lbl">${warn}<code>${f.name}</code></div>
+        <div class="feat-track">
+          <div class="feat-bar ${cls}" data-w="${pct}"></div>
+        </div>
+        <div class="feat-score">${f.v.toFixed(2)}</div>
+      </div>`;
+  });
+})();
+
+// ── Animate bars ─────────────────────────────────────────────
+let animated = false;
+function animateBars() {
+  if (animated) return;
+  animated = true;
+  document.querySelectorAll('.ll-bar[data-w]').forEach(el => {
+    el.style.width = el.dataset.w + '%';
+  });
+  document.querySelectorAll('.feat-bar[data-w]').forEach(el => {
+    // stagger each bar slightly
+    el.style.width = el.dataset.w + '%';
+  });
+}
+
+// Stagger feature bars individually for a nicer cascade effect
+function animateFeatBars() {
+  const bars = document.querySelectorAll('.feat-bar[data-w]');
+  bars.forEach((el, i) => {
+    setTimeout(() => { el.style.width = el.dataset.w + '%'; }, i * 55);
+  });
+}
+
+// Trigger all ll-bars and feat-bars when sections scroll into view
+const llSection  = document.getElementById('s-models');
+const featSection = document.getElementById('s-features');
+
+const llObs = new IntersectionObserver(([e]) => {
+  if (e.isIntersecting) {
+    document.querySelectorAll('.ll-bar[data-w]').forEach(el => {
+      el.style.width = el.dataset.w + '%';
+    });
+    llObs.disconnect();
+  }
+}, { threshold: 0.15 });
+
+const featObs = new IntersectionObserver(([e]) => {
+  if (e.isIntersecting) {
+    animateFeatBars();
+    featObs.disconnect();
+  }
+}, { threshold: 0.1 });
+
+if (llSection)   llObs.observe(llSection);
+if (featSection) featObs.observe(featSection);
+
+// Fallback: if already in viewport on load, animate after paint
+requestAnimationFrame(() => setTimeout(() => {
+  document.querySelectorAll('.ll-bar[data-w]').forEach(el => {
+    if (!el.style.width) el.style.width = el.dataset.w + '%';
+  });
+  document.querySelectorAll('.feat-bar[data-w]').forEach((el, i) => {
+    if (!el.style.width) setTimeout(() => { el.style.width = el.dataset.w + '%'; }, i * 55);
+  });
+}, 350));
+</script>
+
+<script>
+// ── Player Explorer ──────────────────────────────────────────
+(function () {
+  const JSON_PATHS = {
+    atp: '/data/processed/player_stats.json',
+    wta: '/data/processed/player_stats_wta.json',
+  };
+  let peTour      = 'atp';
+  let peCache     = {};    // tour → player array
+  let allPlayers   = [];   // full sorted list for current tour
+  let shownPlayers = [];   // currently rendered slice
+  let expandedId   = null;
+
+  // ── Helpers ─────────────────────────────────────────────────
+  function pct(w, m) { return m ? Math.round(w / m * 100) + '%' : '—'; }
+  const SURF_CLS = { Hard: 'pe-tag-hard', Clay: 'pe-tag-clay', Grass: 'pe-tag-grass', Carpet: 'pe-tag-carpet' };
+  const HAND_LBL = { R: 'Right-handed', L: 'Left-handed', U: 'Unknown' };
+
+  // ── Card HTML ────────────────────────────────────────────────
+  function cardHTML(p) {
+    const wr  = pct(p.wins, p.matches);
+    const br  = p.bestRank === null ? '—' : '#' + Math.round(p.bestRank);
+    const exp = expandedId === p.id;
+
+    // Surface tags (≥3 matches on that surface)
+    const surfTags = Object.entries(p.surf)
+      .filter(([, v]) => v.m >= 3)
+      .sort((a, b) => b[1].m - a[1].m)
+      .map(([s]) => `<span class="pe-tag ${SURF_CLS[s] || ''}">${s}</span>`)
+      .join('');
+
+    const gsBadge  = p.gsWins   > 0 ? `<span class="pe-tag pe-tag-gs">GS ×${p.gsWins}</span>`       : '';
+    const mstBadge = p.masterWins > 0 ? `<span class="pe-tag pe-tag-mst">Masters ×${p.masterWins}</span>` : '';
+
+    // ── Expanded detail block ────────────────────────────────
+    let detail = '';
+    if (exp) {
+      const span = p.firstYear === null ? '—'
+        : p.firstYear === p.lastYear ? String(p.firstYear)
+        : `${p.firstYear}–${p.lastYear}`;
+
+      const surfCells = ['Hard', 'Clay', 'Grass'].map(s => {
+        const d = p.surf[s] || {w:0, m:0};
+        return `<div class="pe-surf-cell pe-${s.toLowerCase()}">
+          <span class="pe-surf-cell-name">${s}</span>
+          <div class="pe-surf-cell-pct">${pct(d.w, d.m)}</div>
+          <div style="font-size:9.5px;color:var(--text-muted);margin-top:2px">${d.m} matches</div>
+        </div>`;
+      }).join('');
+
+      const topOpps = Object.entries(p.opps)
+        .sort((a, b) => (b[1].w + b[1].l) - (a[1].w + a[1].l))
+        .slice(0, 6)
+        .map(([name, rec]) => `<span class="pe-opp">${name} <em>${rec.w}–${rec.l}</em></span>`)
+        .join('');
+
+      const carpetM = p.surf.Carpet?.m || 0;
+      const carpetCell = carpetM >= 3
+        ? `<div class="pe-surf-cell" style="flex:1;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:7px 8px;text-align:center">
+            <span class="pe-surf-cell-name" style="display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">Carpet</span>
+            <div style="font-size:15px;font-weight:800;color:#b09cfc">${pct(p.surf.Carpet.w, p.surf.Carpet.m)}</div>
+            <div style="font-size:9.5px;color:var(--text-muted);margin-top:2px">${p.surf.Carpet.m} matches</div>
+          </div>` : '';
+
+      detail = `
+        <div class="pe-detail">
+          <div class="pe-dg">
+            <div><div class="pe-dl">Career span</div><div class="pe-dv">${span}</div></div>
+            <div><div class="pe-dl">Nationality</div><div class="pe-dv">${p.ioc}</div></div>
+            <div><div class="pe-dl">Plays</div><div class="pe-dv">${HAND_LBL[p.hand] || p.hand}</div></div>
+          </div>
+          <div class="pe-surf-trio">${surfCells}${carpetCell}</div>
+          ${topOpps ? `<div class="pe-opps-label">Most common opponents</div><div class="pe-opps">${topOpps}</div>` : ''}
+        </div>`;
+    }
+
+    return `<div class="pe-card${exp ? ' expanded' : ''}" data-pid="${p.id}" onclick="peToggle('${p.id}')">
+      <div class="pe-card-top">
+        <div class="pe-name">${p.name}</div>
+        <div class="pe-chevron">${exp ? '▾' : '▸'}</div>
+      </div>
+      <div class="pe-stats-row">
+        <span class="pe-stat-big">${p.matches}</span>
+        <span class="pe-stat-sub">matches</span>
+        <span class="pe-stat-sep">·</span>
+        <span class="pe-stat-big">${wr}</span>
+        <span class="pe-stat-sub">win rate</span>
+        <span class="pe-stat-sep">·</span>
+        <span class="pe-stat-sub">best</span>
+        <span class="pe-stat-big" style="font-size:14px">${br}</span>
+      </div>
+      <div class="pe-tags" style="margin-top:8px">${surfTags}${gsBadge}${mstBadge}</div>
+      ${detail}
+    </div>`;
+  }
+
+  // ── Render ───────────────────────────────────────────────────
+  function render(players, total) {
+    shownPlayers = players;
+    const grid    = document.getElementById('pe-grid');
+    const counter = document.getElementById('pe-counter');
+
+    if (!players.length) {
+      grid.innerHTML = '<div class="pe-loading" style="padding:32px 0">No players match your search</div>';
+      counter.textContent = '';
+      return;
+    }
+
+    grid.innerHTML = players.map(cardHTML).join('');
+
+    if (total !== undefined && total > players.length) {
+      counter.textContent = `Showing top ${players.length} of ${total.toLocaleString()} players`;
+    } else {
+      counter.textContent = `${players.length.toLocaleString()} player${players.length !== 1 ? 's' : ''}`;
+    }
+  }
+
+  // ── Public toggle ────────────────────────────────────────────
+  window.peToggle = function (id) {
+    expandedId = expandedId === id ? null : id;
+    render(shownPlayers,
+      shownPlayers.length < allPlayers.length ? allPlayers.length : undefined);
+  };
+
+  // ── Search ───────────────────────────────────────────────────
+  document.getElementById('pe-input').addEventListener('input', function () {
+    const q = this.value.trim().toLowerCase();
+    expandedId = null;
+    if (!q) {
+      render(allPlayers.slice(0, 20), allPlayers.length);
+    } else {
+      const hits = allPlayers.filter(p => p.name.toLowerCase().includes(q));
+      render(hits.slice(0, 100), hits.length > 100 ? hits.length : undefined);
+    }
+  });
+
+  // ── Tour switch ───────────────────────────────────────────────
+  function loadTour(tour) {
+    if (peCache[tour]) {
+      allPlayers = peCache[tour];
+      expandedId = null;
+      document.getElementById('pe-input').value = '';
+      render(allPlayers.slice(0, 20), allPlayers.length);
+      return;
+    }
+    document.getElementById('pe-loading').style.display = 'flex';
+    document.getElementById('pe-loading').innerHTML =
+      '<span class="pe-spinner"></span>Loading ' + tour.toUpperCase() + ' player data…';
+    document.getElementById('pe-grid').innerHTML = '';
+    fetch(JSON_PATHS[tour])
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(data => {
+        peCache[tour] = data;
+        allPlayers = data;
+        expandedId = null;
+        document.getElementById('pe-input').value = '';
+        document.getElementById('pe-loading').style.display = 'none';
+        render(allPlayers.slice(0, 20), allPlayers.length);
+      })
+      .catch(() => {
+        document.getElementById('pe-loading').innerHTML =
+          '<span class="pe-spinner"></span>Failed to load ' + tour.toUpperCase() + ' player data.';
+      });
+  }
+
+  window.peSetTour = function (tour) {
+    if (tour === peTour) return;
+    peTour = tour;
+    document.getElementById('pe-tab-atp').classList.toggle('active', tour === 'atp');
+    document.getElementById('pe-tab-wta').classList.toggle('active', tour === 'wta');
+    loadTour(tour);
+  };
+
+  // ── Initial load (ATP) ────────────────────────────────────────
+  loadTour('atp');
+})();
+</script>
+
+<script>
+// ── Section 06: Model Explainer ───────────────────────────────
+(function () {
+  let activeTab = 'lr';
+  let lrReady = false;
+  let rfTimers = [], gbTimers = [];
+
+  window.meTab = function (name) {
+    if (name === activeTab) { return; }
+    activeTab = name;
+    document.querySelectorAll('.me-tab').forEach(t =>
+      t.classList.toggle('active', t.dataset.p === name));
+    document.querySelectorAll('.me-panel').forEach(p =>
+      p.classList.toggle('active', p.id === 'me-' + name));
+    if (name === 'lr') { if (!lrReady) { lrReady = true; initLR(); } }
+    if (name === 'rf') initRF();
+    if (name === 'gb') initGB();
+  };
+
+  // ── LR ──────────────────────────────────────────────────────
+  function initLR() {
+    const canvas = document.getElementById('lr-canvas');
+    const ctx    = canvas.getContext('2d');
+    const PAD    = 44;
+
+    // Mulberry32 PRNG
+    let seed = 20240101;
+    function rand() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+
+    // 50 sample points: {elo [-260,260], rank [-160,160], win}
+    const PTS = Array.from({ length: 50 }, () => {
+      const elo  = (rand() - 0.5) * 520;
+      const rank = (rand() - 0.5) * 320;
+      const win  = elo - 0.38 * rank + (rand() - 0.5) * 88 > 0;
+      return { elo, rank, win };
+    });
+
+    let W = 0, H = 290;
+    let h1 = { x: 0, y: 0 }, h2 = { x: 0, y: 0 };
+
+    function setSize() {
+      const dpr = window.devicePixelRatio || 1;
+      W = canvas.parentElement.getBoundingClientRect().width;
+      canvas.style.height = H + 'px';
+      canvas.width  = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function resetHandles() {
+      h1 = { x: PAD,     y: PAD + 0.30 * (H - 2*PAD) };
+      h2 = { x: W - PAD, y: PAD + 0.70 * (H - 2*PAD) };
+    }
+
+    // coordinate transforms (CSS px)
+    function tx(elo)  { return PAD + (elo  + 260) / 520 * (W - 2*PAD); }
+    function ty(rank) { return PAD + (rank + 160) / 320 * (H - 2*PAD); }
+
+    // sign of cross-product: which side of h1→h2 is (px,py) on?
+    function side(px, py) {
+      return (h2.x-h1.x)*(py-h1.y) - (h2.y-h1.y)*(px-h1.x) > 0;
+    }
+
+    function accuracy() {
+      let ok = 0;
+      PTS.forEach(p => {
+        // "above" the line (side=false) → predicted win
+        if (!side(tx(p.elo), ty(p.rank)) === p.win) ok++;
+      });
+      return Math.round(ok / PTS.length * 100);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Grid lines
+      ctx.strokeStyle = 'rgba(28,40,64,.85)';
+      ctx.lineWidth = .7;
+      for (let i = 0; i <= 6; i++) {
+        const x = PAD + i/6*(W-2*PAD);
+        ctx.beginPath(); ctx.moveTo(x, PAD); ctx.lineTo(x, H-PAD); ctx.stroke();
+      }
+      for (let i = 0; i <= 4; i++) {
+        const y = PAD + i/4*(H-2*PAD);
+        ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(W-PAD, y); ctx.stroke();
+      }
+
+      // Zero axes
+      const cx = tx(0), cy = ty(0);
+      ctx.strokeStyle = 'rgba(74,88,120,.7)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(cx, PAD-6); ctx.lineTo(cx, H-PAD+6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(PAD-6, cy); ctx.lineTo(W-PAD+6, cy); ctx.stroke();
+
+      // Axis labels
+      ctx.fillStyle = 'rgba(74,88,120,.75)';
+      ctx.font = '10px system-ui,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('ELO diff →', W/2, H-4);
+      ctx.save();
+      ctx.translate(11, H/2); ctx.rotate(-Math.PI/2);
+      ctx.fillText('Rank diff ↑', 0, 0);
+      ctx.restore();
+
+      // Region tint
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(PAD, h1.y); ctx.lineTo(W-PAD, h2.y);
+      ctx.lineTo(W-PAD, PAD); ctx.lineTo(PAD, PAD); ctx.closePath();
+      ctx.fillStyle = 'rgba(14,184,106,.04)'; ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(PAD, h1.y); ctx.lineTo(W-PAD, h2.y);
+      ctx.lineTo(W-PAD, H-PAD); ctx.lineTo(PAD, H-PAD); ctx.closePath();
+      ctx.fillStyle = 'rgba(229,72,77,.035)'; ctx.fill();
+      ctx.restore();
+
+      // Points
+      PTS.forEach(p => {
+        const px = tx(p.elo), py = ty(p.rank);
+        ctx.beginPath(); ctx.arc(px, py, 4.5, 0, 2*Math.PI);
+        ctx.fillStyle   = p.win ? 'rgba(14,184,106,.78)' : 'rgba(229,72,77,.75)';
+        ctx.fill();
+        ctx.strokeStyle = p.win ? 'rgba(14,184,106,.3)' : 'rgba(229,72,77,.28)';
+        ctx.lineWidth = 1; ctx.stroke();
+      });
+
+      // Decision boundary
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = 'rgba(255,255,255,.83)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(h1.x, h1.y); ctx.lineTo(h2.x, h2.y); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Handles
+      [h1, h2].forEach(h => {
+        ctx.beginPath(); ctx.arc(h.x, h.y, 8, 0, 2*Math.PI);
+        ctx.fillStyle = '#1ed9c8'; ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('●', h.x, h.y);
+        ctx.textBaseline = 'alphabetic';
+      });
+      ctx.textAlign = 'left';
+
+      document.getElementById('lr-acc').textContent = accuracy();
+    }
+
+    // Drag
+    let drag = null;
+    function getPos(e) {
+      const r  = canvas.getBoundingClientRect();
+      const ev = e.touches ? e.touches[0] : e;
+      return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+    }
+    function nearH(pos) {
+      if (Math.hypot(pos.x-h1.x, pos.y-h1.y) < 20) return h1;
+      if (Math.hypot(pos.x-h2.x, pos.y-h2.y) < 20) return h2;
+      return null;
+    }
+    canvas.addEventListener('mousedown',  e => { drag = nearH(getPos(e)); });
+    canvas.addEventListener('touchstart', e => { drag = nearH(getPos(e)); e.preventDefault(); }, { passive: false });
+    window.addEventListener('mousemove',  e => { if (!drag) return; drag.y = Math.max(PAD, Math.min(H-PAD, getPos(e).y)); draw(); });
+    window.addEventListener('touchmove',  e => { if (!drag) return; drag.y = Math.max(PAD, Math.min(H-PAD, getPos(e).y)); draw(); e.preventDefault(); }, { passive: false });
+    window.addEventListener('mouseup',  () => drag = null);
+    window.addEventListener('touchend', () => drag = null);
+
+    // Resize
+    const ro = new ResizeObserver(() => {
+      const newW = canvas.parentElement.getBoundingClientRect().width;
+      if (Math.abs(newW - W) < 1) return;
+      setSize(); h1.x = PAD; h2.x = W - PAD; draw();
+    });
+    ro.observe(canvas.parentElement);
+
+    setSize(); resetHandles(); draw();
+  }
+
+  // ── RF ──────────────────────────────────────────────────────
+  const RF_TREES = [
+    { lbl:'Tree 1', q:'ELO diff > 50?',    pathL:true,  lLeaf:{t:'WIN ✓',w:true},  rLeaf:{t:'LOSS ✗',w:false}, vote:'win'  },
+    { lbl:'Tree 2', q:'Rank diff < 30?',   pathL:true,  lLeaf:{t:'WIN ✓',w:true},  rLeaf:{t:'LOSS ✗',w:false}, vote:'win'  },
+    { lbl:'Tree 3', q:'H2H positive?',      pathL:true,  lLeaf:{t:'WIN ✓',w:true},  rLeaf:{t:'LOSS ✗',w:false}, vote:'win'  },
+    { lbl:'Tree 4', q:'Rank diff < −100?',  pathL:false, lLeaf:{t:'LOSS ✗',w:false},rLeaf:{t:'WIN ✓',w:true},  vote:'loss' },
+    { lbl:'Tree 5', q:'Surf win% > 60%?',  pathL:false, lLeaf:{t:'LOSS ✗',w:false},rLeaf:{t:'WIN ✓',w:true},  vote:'loss' },
+  ];
+
+  function mkTreeSVG(t) {
+    const W=116,H=90,cx=58,rootY=18,lY=70,rY=70,lX=24,rX=92;
+    const pX = t.pathL ? lX : rX, sX = t.pathL ? rX : lX;
+    const pL = t.pathL ? t.lLeaf : t.rLeaf, sL = t.pathL ? t.rLeaf : t.lLeaf;
+    const pc = pL.w ? '#0eb86a' : '#e5484d', pb = pL.w ? 'rgba(14,184,106,.2)' : 'rgba(229,72,77,.16)';
+    const q  = t.q.length > 16 ? t.q.slice(0,16)+'…' : t.q;
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+      <line x1="${cx}" y1="${rootY+13}" x2="${pX}" y2="${lY-13}" stroke="#1ed9c8" stroke-width="1.8" opacity=".85"/>
+      <line x1="${cx}" y1="${rootY+13}" x2="${sX}" y2="${lY-13}" stroke="rgba(74,88,120,.35)" stroke-width="1.2"/>
+      <circle cx="${cx}" cy="${rootY}" r="13" fill="rgba(15,22,35,.95)" stroke="rgba(74,88,120,.55)" stroke-width="1.2"/>
+      <text x="${cx}" y="${rootY+4}" text-anchor="middle" fill="#8a9bbf" font-size="5.2" font-family="system-ui">${q}</text>
+      <circle cx="${pX}" cy="${lY}" r="13" fill="${pb}" stroke="${pc}" stroke-width="1.6"/>
+      <text x="${pX}" y="${lY+4}" text-anchor="middle" fill="${pc}" font-size="7" font-weight="bold" font-family="system-ui">${pL.t}</text>
+      <circle cx="${sX}" cy="${lY}" r="11" fill="rgba(15,22,35,.9)" stroke="rgba(74,88,120,.28)" stroke-width="1"/>
+      <text x="${sX}" y="${lY+3}" text-anchor="middle" fill="rgba(74,88,120,.6)" font-size="6" font-family="system-ui">${sL.t}</text>
+      <circle cx="${(cx+pX)/2}" cy="${(rootY+lY)/2}" r="3.5" fill="#1ed9c8" opacity=".65"/>
+    </svg>`;
+  }
+
+  function initRF() {
+    rfTimers.forEach(clearTimeout); rfTimers = [];
+    const wrap  = document.getElementById('rf-wrap');
+    const tally = document.getElementById('rf-tally');
+    const pips  = document.getElementById('rf-pips');
+    const res   = document.getElementById('rf-result');
+    tally.classList.remove('show'); pips.innerHTML = ''; res.textContent = '';
+
+    wrap.innerHTML = RF_TREES.map((t, i) => `
+      <div class="rf-tree" id="rft-${i}" data-vote="${t.vote}">
+        <div class="rf-tree-lbl">${t.lbl}</div>
+        ${mkTreeSVG(t)}
+        <div class="rf-vote ${t.vote}" id="rfv-${i}" style="opacity:0">
+          ${t.vote === 'win' ? '▲ Win' : '▼ Loss'}
+        </div>
+      </div>`).join('');
+
+    RF_TREES.forEach((t, i) => {
+      rfTimers.push(setTimeout(() => {
+        document.getElementById('rft-'+i).classList.add('show', 'vote-'+t.vote);
+        rfTimers.push(setTimeout(() => {
+          document.getElementById('rfv-'+i).style.opacity = '1';
+        }, 300));
+      }, i * 460 + 80));
+    });
+
+    rfTimers.push(setTimeout(() => {
+      const wins   = RF_TREES.filter(t => t.vote === 'win').length;
+      const losses = RF_TREES.length - wins;
+      pips.innerHTML = RF_TREES.map(t =>
+        `<div class="rf-pip ${t.vote}">${t.vote === 'win' ? '✓' : '✗'}</div>`
+      ).join('');
+      res.textContent = `Majority: ${wins > losses ? 'Win' : 'Loss'} (${wins}–${losses})`;
+      tally.classList.add('show');
+    }, RF_TREES.length * 460 + 500));
+  }
+
+  // ── GB ──────────────────────────────────────────────────────
+  // dots: c=correct, w=wrong, f=fixed-by-this-tree
+  const GB_STAGES = [
+    { lbl:'Base Tree', sub:'6 / 10 correct', dots:'ccccccwwww', conf:62 },
+    { lbl:'Tree 2',    sub:'8 / 10 correct', dots:'ccccccffww', conf:73 },
+    { lbl:'Tree 3',    sub:'9 / 10 correct', dots:'ccccccccfw', conf:80 },
+    { lbl:'Tree 4',    sub:'10 / 10 correct',dots:'ccccccccff', conf:84 },
+  ];
+
+  function initGB() {
+    gbTimers.forEach(clearTimeout); gbTimers = [];
+    const seq   = document.getElementById('gb-seq');
+    const meter = document.getElementById('gb-meter');
+    const fill  = document.getElementById('gb-fill');
+    const conf  = document.getElementById('gb-conf');
+    meter.classList.remove('show'); fill.style.width = '0%'; conf.textContent = '0%';
+
+    seq.innerHTML = GB_STAGES.map((s, i) => `
+      <div class="gb-tw">
+        ${i > 0 ? `<div class="gb-arrow-el" id="gbar-${i}">→</div>` : ''}
+        <div class="gb-tree" id="gbt-${i}">
+          <div class="gb-tree-lbl">${s.lbl}</div>
+          <div class="gb-dots" id="gbd-${i}">
+            ${s.dots.split('').map((_, j) =>
+              `<div class="gb-dot" id="gbd-${i}-${j}"></div>`).join('')}
+          </div>
+          <div class="gb-tree-sub">${s.sub}</div>
+        </div>
+      </div>`).join('');
+
+    meter.classList.add('show');
+
+    let delay = 80;
+    GB_STAGES.forEach((s, i) => {
+      gbTimers.push(setTimeout(() => {
+        if (i > 0) {
+          document.getElementById('gbt-'+(i-1)).classList.remove('current');
+          document.getElementById('gbar-'+i).classList.add('show');
+        }
+        const tree = document.getElementById('gbt-'+i);
+        tree.classList.add('show', 'current');
+
+        s.dots.split('').forEach((type, j) => {
+          gbTimers.push(setTimeout(() => {
+            document.getElementById('gbd-'+i+'-'+j).classList.add(type);
+          }, j * 55 + 80));
+        });
+
+        gbTimers.push(setTimeout(() => {
+          fill.style.width = s.conf + '%';
+          conf.textContent = s.conf + '%';
+        }, 460));
+      }, delay));
+      delay += 880;
+    });
+  }
+
+  // Init LR immediately (default tab)
+  setTimeout(() => { lrReady = true; initLR(); }, 60);
+})();
+</script>
+
+<script>
+// ── Section 07: Match Predictor (local model server) ──────────
+(function () {
+  const SERVER = 'http://localhost:8001';
+  let predTour = 'atp';
+  let _playersCache = {};   // tour → player array
+  let p1 = null, p2 = null;
+
+  // ── Server health indicator ────────────────────────────────
+  function checkServer() {
+    const dot = document.getElementById('pred-dot');
+    const txt = document.getElementById('pred-server-txt');
+    fetch(SERVER + '/health', { signal: AbortSignal.timeout(2500) })
+      .then(r => r.json())
+      .then(d => {
+        const tours = d.tours ? Object.keys(d.tours).map(t => t.toUpperCase()).join(' + ') : d.model_type;
+        dot.className = 'pred-dot ok';
+        txt.innerHTML = 'Server online &mdash; ' + tours +
+          ' &nbsp;<code style="font-size:10.5px;color:var(--text-muted)">python src/prediction_server.py</code>';
+      })
+      .catch(() => {
+        dot.className = 'pred-dot err';
+        txt.innerHTML = 'Server offline &mdash; run ' +
+          '<code style="font-size:10.5px;color:var(--amber)">python src/prediction_server.py</code>' +
+          ' in a separate terminal to enable predictions';
+      });
+  }
+  checkServer();
+  setInterval(checkServer, 8000);
+
+  // ── Tour switch ────────────────────────────────────────────
+  window.predSetTour = function (tour) {
+    if (tour === predTour) return;
+    predTour = tour;
+    document.getElementById('pred-tab-atp').classList.toggle('active', tour === 'atp');
+    document.getElementById('pred-tab-wta').classList.toggle('active', tour === 'wta');
+    // Clear selections when switching tour
+    p1 = null; p2 = null;
+    document.getElementById('p1-inp').value = '';
+    document.getElementById('p2-inp').value = '';
+    document.getElementById('pred-card').classList.remove('show');
+    document.getElementById('pred-err').classList.remove('show');
+    loadPlayers(tour); // pre-warm
+  };
+
+  // ── Player autocomplete ────────────────────────────────────
+  function loadPlayers(tour) {
+    tour = tour || predTour;
+    if (_playersCache[tour]) return Promise.resolve(_playersCache[tour]);
+    // Try prediction server first, fall back to static JSON
+    return fetch(SERVER + '/players?tour=' + tour, { signal: AbortSignal.timeout(2500) })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .catch(() => {
+        const staticPaths = {
+          atp: '/data/processed/player_stats.json',
+          wta: '/data/processed/player_stats_wta.json',
+        };
+        return fetch(staticPaths[tour]).then(r => r.json());
+      })
+      .then(d => { _playersCache[tour] = d; return d; });
+  }
+
+  function makeAC(inputId, acId, slot) {
+    const inp = document.getElementById(inputId);
+    const ac  = document.getElementById(acId);
+
+    inp.addEventListener('input', function () {
+      const q = this.value.trim().toLowerCase();
+      if (q.length < 1) { ac.classList.remove('open'); return; }
+      loadPlayers().then(ps => {
+        const hits = ps.filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
+        ac.innerHTML = '';
+        if (!hits.length) { ac.classList.remove('open'); return; }
+        hits.forEach(p => {
+          const d = document.createElement('div');
+          d.className = 'pred-ac-item';
+          d.textContent = p.name;
+          d.addEventListener('mousedown', ev => {
+            ev.preventDefault();
+            inp.value = p.name;
+            if (slot === 'p1') p1 = p;
+            if (slot === 'p2') p2 = p;
+            ac.classList.remove('open');
+          });
+          ac.appendChild(d);
+        });
+        ac.classList.add('open');
+      });
+    });
+
+    inp.addEventListener('keydown', function (e) {
+      const items = [...ac.querySelectorAll('.pred-ac-item')];
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const i = items.findIndex(el => el.classList.contains('hi'));
+        items.forEach(el => el.classList.remove('hi'));
+        if (items[i+1]) items[i+1].classList.add('hi');
+        else if (items[0]) items[0].classList.add('hi');
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const i = items.findIndex(el => el.classList.contains('hi'));
+        items.forEach(el => el.classList.remove('hi'));
+        if (items[i-1]) items[i-1].classList.add('hi');
+        else if (items[items.length-1]) items[items.length-1].classList.add('hi');
+      }
+      if (e.key === 'Enter') {
+        const hi = ac.querySelector('.pred-ac-item.hi');
+        if (hi) hi.dispatchEvent(new MouseEvent('mousedown'));
+      }
+      if (e.key === 'Escape') ac.classList.remove('open');
+    });
+
+    inp.addEventListener('blur', () => setTimeout(() => ac.classList.remove('open'), 180));
+  }
+
+  makeAC('p1-inp', 'p1-ac', 'p1');
+  makeAC('p2-inp', 'p2-ac', 'p2');
+  loadPlayers('atp'); // pre-warm
+
+  // ── Prediction request ─────────────────────────────────────
+  window.predGo = async function () {
+    const surf = document.getElementById('pred-surf').value;
+    const lvl  = document.getElementById('pred-lvl').value;
+    const err  = document.getElementById('pred-err');
+    const spin = document.getElementById('pred-spin');
+    const card = document.getElementById('pred-card');
+    const btn  = document.getElementById('pred-btn');
+
+    err.classList.remove('show');
+    card.classList.remove('show');
+
+    function fail(msg) {
+      err.textContent = msg;
+      err.classList.add('show');
+      spin.classList.remove('show');
+      btn.disabled = false;
+    }
+
+    if (!p1) return fail('Select Player 1 from the autocomplete list.');
+    if (!p2) return fail('Select Player 2 from the autocomplete list.');
+    if (p1.id === p2.id) return fail('Choose two different players.');
+
+    btn.disabled = true;
+    spin.classList.add('show');
+
+    try {
+      const res = await fetch(SERVER + '/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player1_id: p1.id, player2_id: p2.id, surface: surf, level: lvl, tour: predTour }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Server error ' + res.status);
+      renderCard(data, surf, lvl);
+    } catch (e) {
+      fail(e.message || 'Request failed. Is the prediction server running?');
+    } finally {
+      btn.disabled = false;
+      spin.classList.remove('show');
+    }
+  };
+
+  // ── Result card renderer ───────────────────────────────────
+  function renderCard(r, surf, lvl) {
+    const prob1 = Math.min(100, Math.max(0, Math.round(+(r.player1_win_prob) || 50)));
+    const prob2 = 100 - prob1;
+    const win1  = prob1 >= prob2;
+    const c1  = win1  ? 'var(--green)' : 'var(--red)';
+    const c2  = !win1 ? 'var(--green)' : 'var(--red)';
+    const bg1 = win1  ? 'linear-gradient(90deg,var(--green-dk),var(--green))' : 'linear-gradient(90deg,#5a0a0d,var(--red))';
+    const bg2 = !win1 ? 'linear-gradient(90deg,var(--green-dk),var(--green))' : 'linear-gradient(90deg,#5a0a0d,var(--red))';
+
+    document.getElementById('pred-matchup').innerHTML =
+      '<div class="pred-player">' +
+        '<div class="pred-pname">' + p1.name + '</div>' +
+        '<div class="pred-pprob" style="color:' + c1 + '">' + prob1 + '%</div>' +
+        '<div class="pred-pbar-wrap"><div class="pred-pbar" id="pb1" style="background:' + bg1 + '"></div></div>' +
+      '</div>' +
+      '<div class="pred-vs-label">vs</div>' +
+      '<div class="pred-player">' +
+        '<div class="pred-pname">' + p2.name + '</div>' +
+        '<div class="pred-pprob" style="color:' + c2 + '">' + prob2 + '%</div>' +
+        '<div class="pred-pbar-wrap"><div class="pred-pbar" id="pb2" style="background:' + bg2 + '"></div></div>' +
+      '</div>';
+
+    const f = r.features_used || {};
+    const short1 = p1.name.split(' ').pop();
+    const short2 = p2.name.split(' ').pop();
+
+    function diffCls(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu'; }
+    function fv(v, unit) {
+      if (v === null || v === undefined) return '<span class="pred-feat-val">—</span>';
+      return '<span class="pred-feat-val">' + v + (unit || '') + '</span>';
+    }
+    function fd(v, unit) {
+      if (v === null || v === undefined) return '<span class="pred-feat-diff neu">—</span>';
+      const cls = diffCls(v);
+      return '<span class="pred-feat-diff ' + cls + '">' + (v > 0 ? '+' : '') + v + (unit || '') + '</span>';
+    }
+
+    const rows = [
+      ['ELO rating',   fv(f.p1_elo,''),        fv(f.p2_elo,''),        fd(f.elo_diff,'')],
+      ['World rank',   fv(f.p1_rank===null?'N/A':'#'+f.p1_rank,''),
+                       fv(f.p2_rank===null?'N/A':'#'+f.p2_rank,''),
+                       fd(f.rank_diff !== undefined ? -Math.round(f.rank_diff) : null,'')],
+      ['Form (90d)',   fv(f.p1_form,'%'),        fv(f.p2_form,'%'),     fd(f.form_diff,'%')],
+      [surf + ' WR',  fv(f.p1_surface_wr,'%'),  fv(f.p2_surface_wr,'%'), fd(f.surface_wr_diff,'%')],
+      ['H2H wins',    fv(f.h2h_p1,''),          fv(f.h2h_p2,''),       fd(f.h2h_diff,'')],
+      ['Rest diff',   '','',                     fd(f.rest_diff,' d')],
+    ];
+
+    const lvlLabels = { G:'Grand Slam', M:'Masters', A:'Regular', F:'Tour Finals' };
+    const tourLabel = (r.tour || predTour).toUpperCase();
+    const matchCount = r.match_count ? r.match_count.toLocaleString() : '—';
+
+    document.getElementById('pred-factors').innerHTML =
+      '<div class="pred-feat-section">' +
+        '<div class="pred-feat-hdr">Feature Values Used by Model</div>' +
+        '<div class="pred-feat-grid">' +
+          '<div class="pred-feat-col-hdr">Feature</div>' +
+          '<div class="pred-feat-col-hdr" style="text-align:right">' + short1 + '</div>' +
+          '<div class="pred-feat-col-hdr" style="text-align:right">' + short2 + '</div>' +
+          '<div class="pred-feat-col-hdr" style="text-align:right">&Delta; (P1&minus;P2)</div>' +
+          rows.map(([lbl,v1,v2,diff]) =>
+            '<div class="pred-feat-lbl">' + lbl + '</div>' + v1 + v2 + diff
+          ).join('') +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('pred-meta').innerHTML =
+      '<span>Tour: <strong>' + tourLabel + '</strong></span>' +
+      '<span>Model: <strong>' + (r.model_type || 'GradientBoostingClassifier') + '</strong></span>' +
+      '<span>Surface: <strong>' + surf + '</strong></span>' +
+      '<span>Level: <strong>' + (lvlLabels[lvl] || lvl) + '</strong></span>' +
+      '<span style="color:var(--text-muted)">Trained on ' + matchCount + ' ' + tourLabel + ' matches &nbsp;·&nbsp; 1991–2024</span>';
+
+    document.getElementById('pred-card').classList.add('show');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.getElementById('pb1').style.width = prob1 + '%';
+      document.getElementById('pb2').style.width = prob2 + '%';
+    }));
+  }
+})();
+</script>
+</body>
+</html>

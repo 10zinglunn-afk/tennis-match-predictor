@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(PYTHONPATH=. python src/export_player_stats.py --tour wta)"
+    ]
+  }
+}
