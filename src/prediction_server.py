@@ -8,9 +8,11 @@ Run from project root:
 """
 
 import json
+import math
 import os
 import sys
 import pickle
+from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -218,8 +220,35 @@ def _build_prediction(req: dict) -> dict:
     if p2_stats['rank'] is None: p2_stats['rank'] = 500.0
     if p1_stats['age']  is None: p1_stats['age']  = 27.0
     if p2_stats['age']  is None: p2_stats['age']  = 27.0
-    if np.isnan(p1_form): p1_form = 0.5
-    if np.isnan(p2_form): p2_form = 0.5
+
+    # ── Skill decay for inactive players ─────────────────────────────────────
+    def _months_since(last_date_int: int) -> float:
+        if not last_date_int:
+            return 0.0
+        try:
+            last = datetime.strptime(str(int(last_date_int)).zfill(8), '%Y%m%d')
+            return max(0.0, (datetime.today() - last).days / 30)
+        except (ValueError, TypeError):
+            return 0.0
+
+    p1_months = _months_since(p1_stats['last_date'])
+    p2_months = _months_since(p2_stats['last_date'])
+
+    # Form: decay last known value, or neutral 0.5 for never-played
+    if np.isnan(p1_form):
+        p1_form = 0.5
+    else:
+        p1_form = max(0.15, p1_form * math.exp(-0.05 * p1_months))
+
+    if np.isnan(p2_form):
+        p2_form = 0.5
+    else:
+        p2_form = max(0.15, p2_form * math.exp(-0.05 * p2_months))
+
+    # ELO: decay toward initial rating (1500)
+    p1_elo = 1500 + (p1_elo - 1500) * math.exp(-0.03 * p1_months)
+    p2_elo = 1500 + (p2_elo - 1500) * math.exp(-0.03 * p2_months)
+    # ── End skill decay ───────────────────────────────────────────────────────
 
     feat = build_feature_vector(
         p1_elo=p1_elo,             p2_elo=p2_elo,
@@ -252,22 +281,24 @@ def _build_prediction(req: dict) -> dict:
     match_count = len(df)
 
     features_used = {
-        'p1_elo':          round(p1_elo, 0),
-        'p2_elo':          round(p2_elo, 0),
-        'elo_diff':        round(feat['elo_diff'], 1),
-        'p1_rank':         p1_rank_disp,
-        'p2_rank':         p2_rank_disp,
-        'rank_diff':       round(feat['winner_rank_diff'], 1),
-        'p1_form':         round(p1_form * 100, 1),
-        'p2_form':         round(p2_form * 100, 1),
-        'form_diff':       round((p1_form - p2_form) * 100, 1),
-        'p1_surface_wr':   round(p1_swr * 100, 1),
-        'p2_surface_wr':   round(p2_swr * 100, 1),
-        'surface_wr_diff': round(feat['winner_surface_winrate_diff'] * 100, 1),
-        'h2h_p1':          int(feat['h2h_winner_wins']),
-        'h2h_p2':          int(feat['h2h_loser_wins']),
-        'h2h_diff':        int(feat['h2h_diff']),
-        'rest_diff':       round(feat['days_rest_diff'], 1),
+        'p1_elo':               round(p1_elo, 0),
+        'p2_elo':               round(p2_elo, 0),
+        'elo_diff':             round(feat['elo_diff'], 1),
+        'p1_rank':              p1_rank_disp,
+        'p2_rank':              p2_rank_disp,
+        'rank_diff':            round(feat['winner_rank_diff'], 1),
+        'p1_form':              round(p1_form * 100, 1),
+        'p2_form':              round(p2_form * 100, 1),
+        'form_diff':            round((p1_form - p2_form) * 100, 1),
+        'p1_surface_wr':        round(p1_swr * 100, 1),
+        'p2_surface_wr':        round(p2_swr * 100, 1),
+        'surface_wr_diff':      round(feat['winner_surface_winrate_diff'] * 100, 1),
+        'h2h_p1':               int(feat['h2h_winner_wins']),
+        'h2h_p2':               int(feat['h2h_loser_wins']),
+        'h2h_diff':             int(feat['h2h_diff']),
+        'rest_diff':            round(feat['days_rest_diff'], 1),
+        'p1_months_inactive':   round(p1_months, 1),
+        'p2_months_inactive':   round(p2_months, 1),
     }
 
     return {

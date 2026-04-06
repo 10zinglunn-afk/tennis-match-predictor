@@ -2327,13 +2327,23 @@ requestAnimationFrame(() => setTimeout(() => {
       const cls = diffCls(v);
       return '<span class="pred-feat-diff ' + cls + '">' + (v > 0 ? '+' : '') + v + (unit || '') + '</span>';
     }
+    function fvForm(v, months) {
+      if (v === null || v === undefined) return '<span class="pred-feat-val">—</span>';
+      let chip = '';
+      if (months && months > 3) {
+        chip = ' <span class="warn-chip">&#9888; ' + Math.round(months) + ' mo inactive</span>';
+      }
+      return '<span class="pred-feat-val" style="white-space:nowrap">' + v + '%' + chip + '</span>';
+    }
 
     const rows = [
-      ['ELO rating',   fv(f.p1_elo,''),        fv(f.p2_elo,''),        fd(f.elo_diff,'')],
+      ['ELO rating',   fv(f.p1_elo,''),         fv(f.p2_elo,''),        fd(f.elo_diff,'')],
       ['World rank',   fv(f.p1_rank===null?'N/A':'#'+f.p1_rank,''),
                        fv(f.p2_rank===null?'N/A':'#'+f.p2_rank,''),
                        fd(f.rank_diff !== undefined ? -Math.round(f.rank_diff) : null,'')],
-      ['Form (90d)',   fv(f.p1_form,'%'),        fv(f.p2_form,'%'),     fd(f.form_diff,'%')],
+      ['Form (90d)',   fvForm(f.p1_form, f.p1_months_inactive),
+                       fvForm(f.p2_form, f.p2_months_inactive),
+                       fd(f.form_diff,'%')],
       [surf + ' WR',  fv(f.p1_surface_wr,'%'),  fv(f.p2_surface_wr,'%'), fd(f.surface_wr_diff,'%')],
       ['H2H wins',    fv(f.h2h_p1,''),          fv(f.h2h_p2,''),       fd(f.h2h_diff,'')],
       ['Rest diff',   '','',                     fd(f.rest_diff,' d')],

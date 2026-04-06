@@ -5,6 +5,7 @@ Usage:
     python src/predict_match.py "Novak Djokovic" "Carlos Alcaraz"
 """
 
+import math
 import os
 import sys
 import pickle
@@ -389,12 +390,39 @@ def main() -> None:
         p2_stats['age'] = 27.0
         warnings.append(f"{p2_name}: age not found — using 27.0 (tour average)")
 
+    # ── Skill decay for inactive players ──────────────────────────────────────
+    def _months_since(last_date_int: int) -> float:
+        if not last_date_int:
+            return 0.0
+        try:
+            last = datetime.strptime(str(int(last_date_int)).zfill(8), '%Y%m%d')
+            return max(0.0, (datetime.today() - last).days / 30)
+        except (ValueError, TypeError):
+            return 0.0
+
+    p1_months = _months_since(p1_stats['last_date'])
+    p2_months = _months_since(p2_stats['last_date'])
+
     if np.isnan(p1_form):
         p1_form = 0.5
-        warnings.append(f"{p1_name}: no matches in form window — using 0.5")
+        warnings.append(f"{p1_name}: no matches in form window — using 0.5 (neutral)")
+    else:
+        p1_form = max(0.15, p1_form * math.exp(-0.05 * p1_months))
+        if p1_months > 3:
+            warnings.append(f"{p1_name}: {p1_months:.1f} months inactive — form decayed to {p1_form*100:.1f}%")
+
     if np.isnan(p2_form):
         p2_form = 0.5
-        warnings.append(f"{p2_name}: no matches in form window — using 0.5")
+        warnings.append(f"{p2_name}: no matches in form window — using 0.5 (neutral)")
+    else:
+        p2_form = max(0.15, p2_form * math.exp(-0.05 * p2_months))
+        if p2_months > 3:
+            warnings.append(f"{p2_name}: {p2_months:.1f} months inactive — form decayed to {p2_form*100:.1f}%")
+
+    # ELO: decay toward initial rating (1500) for inactive players
+    p1_elo = 1500 + (p1_elo - 1500) * math.exp(-0.03 * p1_months)
+    p2_elo = 1500 + (p2_elo - 1500) * math.exp(-0.03 * p2_months)
+    # ── End skill decay ────────────────────────────────────────────────────────
 
     if p1_swr_n < 5:
         warnings.append(

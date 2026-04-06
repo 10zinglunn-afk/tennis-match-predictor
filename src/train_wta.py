@@ -154,18 +154,44 @@ def main():
     # ── 9. Save WTA best model ────────────────────────────────────────────────
     os.makedirs(os.path.join(ROOT_DIR, config.MODELS_PATH), exist_ok=True)
     save_path = os.path.join(ROOT_DIR, config.MODELS_PATH, 'best_model_wta.pkl')
+
+    # Load old metrics for comparison before overwriting
+    old_wta_metrics = None
+    if os.path.exists(save_path):
+        try:
+            with open(save_path, 'rb') as f:
+                old_wta_bundle = pickle.load(f)
+            old_wta_metrics = old_wta_bundle.get('metrics')
+        except Exception:
+            pass
+
+    new_wta_metrics = results[best_type]
     payload = {
         'model':        best_tm.model,
         'model_type':   best_type,
         'feature_cols': FEATURE_COLS,
         'scaler':       scaler,
         'uses_scaling': best_type == 'logistic_regression',
-        'metrics':      results[best_type],
+        'metrics':      new_wta_metrics,
         'tour':         'wta',
     }
     with open(save_path, 'wb') as f:
         pickle.dump(payload, f)
     print(f"\nWTA best model saved → {save_path}")
+
+    # ── 10. Before/after comparison ───────────────────────────────────────────
+    if old_wta_metrics:
+        delta_ll  = new_wta_metrics['log_loss'] - old_wta_metrics['log_loss']
+        delta_auc = new_wta_metrics['auc']      - old_wta_metrics['auc']
+        delta_acc = new_wta_metrics['accuracy'] - old_wta_metrics['accuracy']
+        print("\n── Before/after decay-feature comparison (WTA) ───────────────")
+        print(f"  {'METRIC':<12}  {'OLD':>8}  {'NEW':>8}  {'DELTA':>9}")
+        print("  " + "-" * 43)
+        print(f"  {'log-loss':<12}  {old_wta_metrics['log_loss']:>8.4f}  {new_wta_metrics['log_loss']:>8.4f}  {delta_ll:>+9.4f}  {'▼ better' if delta_ll < 0 else '▲ worse'}")
+        print(f"  {'AUC':<12}  {old_wta_metrics['auc']:>8.4f}  {new_wta_metrics['auc']:>8.4f}  {delta_auc:>+9.4f}  {'▲ better' if delta_auc > 0 else '▼ worse'}")
+        print(f"  {'accuracy':<12}  {old_wta_metrics['accuracy']:>8.4f}  {new_wta_metrics['accuracy']:>8.4f}  {delta_acc:>+9.4f}  {'▲ better' if delta_acc > 0 else '▼ worse'}")
+    else:
+        print("\n(No prior WTA metrics found — delta comparison requires a previous run.)")
 
     # Also patch metrics into ATP bundle if it exists
     if os.path.exists(atp_path) and not atp_bundle.get('metrics'):

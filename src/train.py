@@ -193,16 +193,43 @@ def main():
     # ── 8. Save best model ────────────────────────────────────────────────────
     os.makedirs(os.path.join(ROOT_DIR, config.MODELS_PATH), exist_ok=True)
     save_path = os.path.join(ROOT_DIR, config.MODELS_PATH, 'best_model.pkl')
+
+    # Load old metrics for comparison before overwriting
+    old_metrics = None
+    if os.path.exists(save_path):
+        try:
+            with open(save_path, 'rb') as f:
+                old_bundle = pickle.load(f)
+            old_metrics = old_bundle.get('metrics')
+        except Exception:
+            pass
+
+    new_metrics = results[best_type]
     payload = {
         'model':        best_tm.model,
         'model_type':   best_type,
         'feature_cols': FEATURE_COLS,
         'scaler':       scaler,           # needed if best_type == 'logistic_regression'
         'uses_scaling': best_type == 'logistic_regression',
+        'metrics':      new_metrics,
     }
     with open(save_path, 'wb') as f:
         pickle.dump(payload, f)
     print(f"\nBest model saved → {save_path}")
+
+    # ── 9. Before/after comparison ────────────────────────────────────────────
+    if old_metrics:
+        delta_ll  = new_metrics['log_loss'] - old_metrics['log_loss']
+        delta_auc = new_metrics['auc']      - old_metrics['auc']
+        delta_acc = new_metrics['accuracy'] - old_metrics['accuracy']
+        print("\n── Before/after decay-feature comparison (ATP) ───────────────")
+        print(f"  {'METRIC':<12}  {'OLD':>8}  {'NEW':>8}  {'DELTA':>9}")
+        print("  " + "-" * 43)
+        print(f"  {'log-loss':<12}  {old_metrics['log_loss']:>8.4f}  {new_metrics['log_loss']:>8.4f}  {delta_ll:>+9.4f}  {'▼ better' if delta_ll < 0 else '▲ worse'}")
+        print(f"  {'AUC':<12}  {old_metrics['auc']:>8.4f}  {new_metrics['auc']:>8.4f}  {delta_auc:>+9.4f}  {'▲ better' if delta_auc > 0 else '▼ worse'}")
+        print(f"  {'accuracy':<12}  {old_metrics['accuracy']:>8.4f}  {new_metrics['accuracy']:>8.4f}  {delta_acc:>+9.4f}  {'▲ better' if delta_acc > 0 else '▼ worse'}")
+    else:
+        print("\n(No prior ATP metrics found — delta comparison requires a previous run.)")
 
 
 if __name__ == '__main__':

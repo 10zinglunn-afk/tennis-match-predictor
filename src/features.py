@@ -270,6 +270,29 @@ class FeatureExtractor:
 
         long_df = long_df.reset_index()
         long_df['tourney_date'] = long_df['tourney_date'].astype(str)  # align with features_df['date'] which is also str
+
+        # --- Exponential decay for inactive players ---
+        # Players returning after >90 days get a decayed version of their last known form
+        # rather than NaN (which would otherwise drop those rows from training).
+        long_df = long_df.sort_values(['player_id', 'date_dt'])
+        long_df['_last_form'] = long_df.groupby('player_id')['form'].ffill()
+        # Last datetime that produced a non-NaN rolling form window
+        long_df['_last_active_dt'] = long_df['date_dt'].where(long_df['form'].notna())
+        long_df['_last_active_dt'] = long_df.groupby('player_id')['_last_active_dt'].ffill()
+        long_df['_months_inactive'] = (
+            (long_df['date_dt'] - long_df['_last_active_dt']).dt.days / 30
+        ).fillna(0).clip(lower=0)
+        # NaN form + prior history → decay: max(0.15, last_form * exp(-0.05 * months))
+        _nan_hist = long_df['form'].isna() & long_df['_last_form'].notna()
+        long_df.loc[_nan_hist, 'form'] = np.maximum(
+            0.15,
+            long_df.loc[_nan_hist, '_last_form'] * np.exp(-0.05 * long_df.loc[_nan_hist, '_months_inactive'])
+        )
+        # NaN form + no history at all → neutral 0.5 (player has never been seen before)
+        long_df['form'] = long_df['form'].fillna(0.5)
+        long_df = long_df.drop(columns=['_last_form', '_last_active_dt', '_months_inactive'])
+        # --- End form decay ---
+
         # closed='left' makes all same-day rolling values identical for a player, so deduplication is safe
         stats = (long_df[['player_id', 'tourney_date', 'form', 'fatigue']]
                  .drop_duplicates(subset=['player_id', 'tourney_date']))
@@ -396,26 +419,41 @@ class FeatureExtractor:
             .drop_duplicates(subset=['player_id', 'tourney_date'])
             .sort_values(['player_id', 'date_dt']))
         daily_rest['prev_date'] = daily_rest.groupby('player_id')['date_dt'].shift(1)  # previous calendar day this player played
-        daily_rest['days_rest'] = (daily_rest['date_dt'] - daily_rest['prev_date']).dt.days
-        daily_rest['days_rest'] = daily_rest['days_rest'].fillna(14).clip(upper=30)  # 14 = assumed average; 30+ days all treated the same
+        daily_rest['_days_rest_raw'] = (daily_rest['date_dt'] - daily_rest['prev_date']).dt.days.fillna(14)  # uncapped; used for ELO decay
+        daily_rest['days_rest'] = daily_rest['_days_rest_raw'].clip(upper=30)  # 14 = assumed average; 30+ days all treated the same
 
         daily_rest['tourney_date'] = daily_rest['tourney_date'].astype(str)
-        rest_stats = daily_rest[['player_id', 'tourney_date', 'days_rest']]
+        rest_stats = daily_rest[['player_id', 'tourney_date', 'days_rest', '_days_rest_raw']]
 
         features_df = features_df.merge(
-            rest_stats.rename(columns={'player_id': 'winner_id', 'tourney_date': 'date', 'days_rest': 'days_rest_winner'}),
+            rest_stats.rename(columns={'player_id': 'winner_id', 'tourney_date': 'date',
+                                       'days_rest': 'days_rest_winner', '_days_rest_raw': '_winner_rest_raw'}),
             on=['winner_id', 'date'], how='left'
         )
         features_df = features_df.merge(
-            rest_stats.rename(columns={'player_id': 'loser_id', 'tourney_date': 'date', 'days_rest': 'days_rest_loser'}),
+            rest_stats.rename(columns={'player_id': 'loser_id', 'tourney_date': 'date',
+                                       'days_rest': 'days_rest_loser', '_days_rest_raw': '_loser_rest_raw'}),
             on=['loser_id', 'date'], how='left'
         )
         # Players with no prior match in the dataset (true first match) get NaN — fill with assumed average
-        features_df['days_rest_winner'] = features_df['days_rest_winner'].fillna(14)
-        features_df['days_rest_loser']  = features_df['days_rest_loser'].fillna(14)
+        features_df['days_rest_winner']  = features_df['days_rest_winner'].fillna(14)
+        features_df['_winner_rest_raw']  = features_df['_winner_rest_raw'].fillna(14)
+        features_df['days_rest_loser']   = features_df['days_rest_loser'].fillna(14)
+        features_df['_loser_rest_raw']   = features_df['_loser_rest_raw'].fillna(14)
         features_df['days_rest_diff'] = (  # positive = winner is more rested than loser
             features_df['days_rest_winner'] - features_df['days_rest_loser']
         )
+
+        # --- ELO decay toward initial rating (1500) for inactive players ---
+        # Uses uncapped rest days to capture long absences (injuries, retirements, etc.)
+        # decayed_elo = 1500 + (last_elo - 1500) * exp(-0.03 * months_inactive)
+        _months_w = features_df['_winner_rest_raw'] / 30
+        _months_l = features_df['_loser_rest_raw'] / 30
+        features_df['winner_elo'] = 1500 + (features_df['winner_elo'] - 1500) * np.exp(-0.03 * _months_w)
+        features_df['loser_elo']  = 1500 + (features_df['loser_elo']  - 1500) * np.exp(-0.03 * _months_l)
+        features_df['elo_diff']   = features_df['winner_elo'] - features_df['loser_elo']
+        features_df = features_df.drop(columns=['_winner_rest_raw', '_loser_rest_raw'])
+        # --- End ELO decay ---
 
         logger.info(f"Extracted features for {len(features_df)} matches")
         return features_df
