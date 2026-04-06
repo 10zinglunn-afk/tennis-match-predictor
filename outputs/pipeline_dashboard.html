@@ -1059,6 +1059,69 @@ select.pred-input { cursor: pointer; }
   .pred-pname   { font-size: 13px; }
   .pred-pprob   { font-size: 24px; }
 }
+
+/* ─── PLAYER CHARTS ──────────────────────────────────────── */
+.pe-charts {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.pe-chart-wrap {
+  background: rgba(255,255,255,.02);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 14px 10px;
+}
+.pe-chart-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.pe-chart-canvas {
+  display: block;
+  width: 100%;
+  border-radius: 4px;
+}
+.pe-consistency-wrap {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pe-consistency-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.pe-consistency-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.pe-consistency-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--teal), var(--teal-lt));
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+}
+.pe-consistency-val {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--teal-lt);
+  white-space: nowrap;
+}
+.pe-chart-no-data {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 10px 0 4px;
+}
 </style>
 </head>
 <body>
@@ -1645,16 +1708,45 @@ requestAnimationFrame(() => setTimeout(() => {
     atp: '/data/processed/player_stats.json',
     wta: '/data/processed/player_stats_wta.json',
   };
-  let peTour      = 'atp';
-  let peCache     = {};    // tour → player array
-  let allPlayers   = [];   // full sorted list for current tour
-  let shownPlayers = [];   // currently rendered slice
+  const ELO_PATHS = {
+    atp: '/data/processed/elo_history_atp.json',
+    wta: '/data/processed/elo_history_wta.json',
+  };
+
+  let peTour       = 'atp';
+  let peCache      = {};   // tour → player array
+  let eloCache     = {};   // tour → {player_id: eloRecord}
+  let allPlayers   = [];
+  let shownPlayers = [];
   let expandedId   = null;
 
-  // ── Helpers ─────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────
   function pct(w, m) { return m ? Math.round(w / m * 100) + '%' : '—'; }
   const SURF_CLS = { Hard: 'pe-tag-hard', Clay: 'pe-tag-clay', Grass: 'pe-tag-grass', Carpet: 'pe-tag-carpet' };
   const HAND_LBL = { R: 'Right-handed', L: 'Left-handed', U: 'Unknown' };
+
+  // roundRect polyfill for older Safari / Firefox < 112
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      r = Math.min(r, w / 2, h / 2);
+      this.beginPath();
+      this.moveTo(x + r, y);
+      this.arcTo(x + w, y,     x + w, y + h, r);
+      this.arcTo(x + w, y + h, x,     y + h, r);
+      this.arcTo(x,     y + h, x,     y,     r);
+      this.arcTo(x,     y,     x + w, y,     r);
+      this.closePath();
+    };
+  }
+
+  // Fetch ELO history for a tour (once), returns Promise resolving to dict
+  function fetchElo(tour) {
+    if (eloCache[tour]) return Promise.resolve(eloCache[tour]);
+    return fetch(ELO_PATHS[tour])
+      .then(r => r.ok ? r.json() : {})
+      .then(data => { eloCache[tour] = data; return data; })
+      .catch(() => { eloCache[tour] = {}; return {}; });
+  }
 
   // ── Card HTML ────────────────────────────────────────────────
   function cardHTML(p) {
@@ -1662,17 +1754,14 @@ requestAnimationFrame(() => setTimeout(() => {
     const br  = p.bestRank === null ? '—' : '#' + Math.round(p.bestRank);
     const exp = expandedId === p.id;
 
-    // Surface tags (≥3 matches on that surface)
     const surfTags = Object.entries(p.surf)
       .filter(([, v]) => v.m >= 3)
       .sort((a, b) => b[1].m - a[1].m)
       .map(([s]) => `<span class="pe-tag ${SURF_CLS[s] || ''}">${s}</span>`)
       .join('');
-
-    const gsBadge  = p.gsWins   > 0 ? `<span class="pe-tag pe-tag-gs">GS ×${p.gsWins}</span>`       : '';
+    const gsBadge  = p.gsWins    > 0 ? `<span class="pe-tag pe-tag-gs">GS ×${p.gsWins}</span>`            : '';
     const mstBadge = p.masterWins > 0 ? `<span class="pe-tag pe-tag-mst">Masters ×${p.masterWins}</span>` : '';
 
-    // ── Expanded detail block ────────────────────────────────
     let detail = '';
     if (exp) {
       const span = p.firstYear === null ? '—'
@@ -1711,6 +1800,23 @@ requestAnimationFrame(() => setTimeout(() => {
           </div>
           <div class="pe-surf-trio">${surfCells}${carpetCell}</div>
           ${topOpps ? `<div class="pe-opps-label">Most common opponents</div><div class="pe-opps">${topOpps}</div>` : ''}
+          <div class="pe-charts">
+            <div class="pe-chart-wrap" id="elo-wrap-${p.id}">
+              <div class="pe-chart-title">ELO Rating Over Time</div>
+              <canvas class="pe-chart-canvas" id="elo-canvas-${p.id}" height="130"></canvas>
+              <div class="pe-consistency-wrap" id="cons-wrap-${p.id}" style="display:none">
+                <span class="pe-consistency-label">Consistency score</span>
+                <div class="pe-consistency-track">
+                  <div class="pe-consistency-fill" id="cons-fill-${p.id}" style="width:0%"></div>
+                </div>
+                <span class="pe-consistency-val" id="cons-val-${p.id}"></span>
+              </div>
+            </div>
+            <div class="pe-chart-wrap" id="surf-wrap-${p.id}">
+              <div class="pe-chart-title">Win Rate by Surface</div>
+              <canvas class="pe-chart-canvas" id="surf-canvas-${p.id}" height="90"></canvas>
+            </div>
+          </div>
         </div>`;
     }
 
@@ -1734,6 +1840,223 @@ requestAnimationFrame(() => setTimeout(() => {
     </div>`;
   }
 
+  // ── Chart renderers ──────────────────────────────────────────
+
+  // Draw ELO trajectory line chart onto canvas id="elo-canvas-{pid}"
+  function drawEloChart(pid, eloRecord) {
+    const canvas = document.getElementById('elo-canvas-' + pid);
+    if (!canvas) return;
+
+    if (!eloRecord || !eloRecord.elo_by_year || Object.keys(eloRecord.elo_by_year).length < 2) {
+      canvas.style.display = 'none';
+      const wrap = document.getElementById('elo-wrap-' + pid);
+      if (wrap) wrap.insertAdjacentHTML('beforeend',
+        '<div class="pe-chart-no-data">No multi-year ELO history available.</div>');
+      return;
+    }
+
+    const dpr    = window.devicePixelRatio || 1;
+    const W      = canvas.parentElement.getBoundingClientRect().width - 28; // account for wrap padding
+    const H      = 130;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const years = Object.keys(eloRecord.elo_by_year).map(Number).sort((a,b) => a-b);
+    const elos  = years.map(y => eloRecord.elo_by_year[String(y)]);
+    const peakY = eloRecord.peak_year;
+    const peakE = eloRecord.peak_elo;
+    const cons  = eloRecord.consistency_score;
+
+    const ELO_MIN = 1400, ELO_MAX = 2200;
+    const PAD_L = 44, PAD_R = 14, PAD_T = 18, PAD_B = 26;
+    const plotW  = W - PAD_L - PAD_R;
+    const plotH  = H - PAD_T - PAD_B;
+
+    function xOf(i)   { return PAD_L + (i / (years.length - 1)) * plotW; }
+    function yOf(elo) { return PAD_T + (1 - (elo - ELO_MIN) / (ELO_MAX - ELO_MIN)) * plotH; }
+
+    // Grid + Y axis labels
+    ctx.font = '9px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(74,88,120,.65)';
+    ctx.textAlign = 'right';
+    const gridElos = [1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200];
+    gridElos.forEach(e => {
+      const y = yOf(e);
+      if (y < PAD_T - 2 || y > H - PAD_B + 2) return;
+      ctx.strokeStyle = e === 1800 ? 'rgba(230,168,23,.18)' : 'rgba(28,40,64,.9)';
+      ctx.lineWidth   = e === 1800 ? 1 : .6;
+      ctx.setLineDash(e === 1800 ? [4,3] : []);
+      ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = e === 1800 ? 'rgba(230,168,23,.7)' : 'rgba(74,88,120,.55)';
+      ctx.fillText(e, PAD_L - 4, y + 3.5);
+    });
+    ctx.fillStyle = 'rgba(74,88,120,.55)';
+
+    // "Elite threshold" label at 1800
+    const eliteY = yOf(1800);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(230,168,23,.75)';
+    ctx.font = '8.5px system-ui,sans-serif';
+    ctx.fillText('Elite threshold', PAD_L + 4, eliteY - 4);
+
+    // X axis year labels (show every other year if many)
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(74,88,120,.6)';
+    ctx.font = '9px system-ui,sans-serif';
+    const step = years.length > 14 ? 3 : years.length > 8 ? 2 : 1;
+    years.forEach((yr, i) => {
+      if (i % step !== 0 && i !== years.length - 1) return;
+      ctx.fillText(String(yr), xOf(i), H - PAD_B + 14);
+    });
+
+    // Coloured segments: green if rising, red if falling
+    for (let i = 0; i < elos.length - 1; i++) {
+      const rising = elos[i + 1] >= elos[i];
+      ctx.beginPath();
+      ctx.moveTo(xOf(i),     yOf(elos[i]));
+      ctx.lineTo(xOf(i + 1), yOf(elos[i + 1]));
+      ctx.strokeStyle = rising ? 'rgba(14,184,106,.85)' : 'rgba(229,72,77,.8)';
+      ctx.lineWidth   = 2;
+      ctx.lineJoin    = 'round';
+      ctx.stroke();
+    }
+
+    // Data dots
+    elos.forEach((e, i) => {
+      ctx.beginPath();
+      ctx.arc(xOf(i), yOf(e), 2.5, 0, 2 * Math.PI);
+      ctx.fillStyle = 'rgba(232,237,245,.55)';
+      ctx.fill();
+    });
+
+    // Peak dot + label
+    const peakIdx = years.indexOf(peakY);
+    if (peakIdx >= 0) {
+      const px = xOf(peakIdx), py = yOf(peakE);
+      ctx.beginPath();
+      ctx.arc(px, py, 5, 0, 2 * Math.PI);
+      ctx.fillStyle   = '#f5c842';
+      ctx.strokeStyle = 'rgba(255,255,255,.25)';
+      ctx.lineWidth   = 1;
+      ctx.fill(); ctx.stroke();
+
+      ctx.font      = 'bold 9px system-ui,sans-serif';
+      ctx.fillStyle = '#f5c842';
+      ctx.textAlign = px > W - 80 ? 'right' : 'left';
+      const lx = px > W - 80 ? px - 8 : px + 8;
+      const ly = py < PAD_T + 14 ? py + 13 : py - 6;
+      ctx.fillText(`${Math.round(peakE)} (${peakY})`, lx, ly);
+    }
+
+    // Consistency score bar
+    const consWrap = document.getElementById('cons-wrap-' + pid);
+    const consFill = document.getElementById('cons-fill-' + pid);
+    const consVal  = document.getElementById('cons-val-' + pid);
+    if (consWrap && consFill && consVal) {
+      consWrap.style.display = 'flex';
+      consVal.textContent    = (cons * 100).toFixed(0) + '%';
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => { consFill.style.width = (cons * 100) + '%'; }));
+    }
+  }
+
+  // Draw surface win-rate horizontal bars onto canvas id="surf-canvas-{pid}"
+  function drawSurfChart(pid, surfData) {
+    const canvas = document.getElementById('surf-canvas-' + pid);
+    if (!canvas) return;
+
+    const SURFS = [
+      { key: 'Hard',  color: 'rgba(47,123,234,.85)',  label: 'Hard'  },
+      { key: 'Clay',  color: 'rgba(230,168,23,.85)',  label: 'Clay'  },
+      { key: 'Grass', color: 'rgba(14,184,106,.85)',  label: 'Grass' },
+    ];
+
+    const rows = SURFS.map(s => {
+      const d = surfData[s.key] || {w:0, m:0};
+      return { ...s, wins: d.w, matches: d.m, rate: d.m >= 5 ? d.w / d.m : null };
+    }).filter(r => r.matches >= 3);
+
+    const dpr = window.devicePixelRatio || 1;
+    const W   = canvas.parentElement.getBoundingClientRect().width - 28;
+    const H   = Math.max(60, rows.length * 30);
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    if (!rows.length) {
+      ctx.font = '11px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(74,88,120,.6)';
+      ctx.fillText('No surface data (< 3 matches on any surface)', 8, 22);
+      return;
+    }
+
+    const PAD_L = 52, PAD_R = 90, ROW_H = 28, ROW_PAD = 2;
+    const barMaxW = W - PAD_L - PAD_R;
+
+    rows.forEach((r, i) => {
+      const y      = i * ROW_H + ROW_PAD;
+      const barH   = ROW_H - ROW_PAD * 2 - 4;
+      const barY   = y + (ROW_H - barH) / 2;
+      const fillW  = r.rate !== null ? barMaxW * r.rate : barMaxW * 0.5;
+
+      // Surface label
+      ctx.font      = 'bold 10px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(138,155,191,.75)';
+      ctx.textAlign = 'right';
+      ctx.fillText(r.label, PAD_L - 6, barY + barH / 2 + 3.5);
+
+      // Track
+      ctx.fillStyle = 'rgba(255,255,255,.03)';
+      ctx.strokeStyle = 'rgba(28,40,64,.9)';
+      ctx.lineWidth = .6;
+      ctx.beginPath();
+      ctx.roundRect(PAD_L, barY, barMaxW, barH, 3);
+      ctx.fill(); ctx.stroke();
+
+      // Fill
+      if (fillW > 2) {
+        ctx.fillStyle = r.color;
+        ctx.beginPath();
+        ctx.roundRect(PAD_L, barY, fillW, barH, 3);
+        ctx.fill();
+      }
+
+      // 50% marker
+      ctx.strokeStyle = 'rgba(74,88,120,.4)';
+      ctx.lineWidth = .8;
+      ctx.setLineDash([3,2]);
+      const mx = PAD_L + barMaxW * 0.5;
+      ctx.beginPath(); ctx.moveTo(mx, barY - 1); ctx.lineTo(mx, barY + barH + 1); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Win-rate label
+      ctx.textAlign = 'left';
+      ctx.font      = 'bold 10px system-ui,sans-serif';
+      ctx.fillStyle = r.rate !== null ? 'rgba(232,237,245,.85)' : 'rgba(74,88,120,.6)';
+      const rateStr = r.rate !== null ? Math.round(r.rate * 100) + '%' : '—';
+      ctx.fillText(rateStr, PAD_L + barMaxW + 8, barY + barH / 2 + 3.5);
+
+      // Match count
+      ctx.font      = '9px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(74,88,120,.7)';
+      ctx.fillText(`${r.matches}m`, PAD_L + barMaxW + 40, barY + barH / 2 + 3.5);
+    });
+  }
+
+  // Draw both charts for the currently expanded card
+  function drawChartsForExpanded(pid, eloData, surfData) {
+    drawEloChart(pid, eloData ? eloData[String(pid)] : null);
+    drawSurfChart(pid, surfData);
+  }
+
   // ── Render ───────────────────────────────────────────────────
   function render(players, total) {
     shownPlayers = players;
@@ -1752,6 +2075,18 @@ requestAnimationFrame(() => setTimeout(() => {
       counter.textContent = `Showing top ${players.length} of ${total.toLocaleString()} players`;
     } else {
       counter.textContent = `${players.length.toLocaleString()} player${players.length !== 1 ? 's' : ''}`;
+    }
+
+    // If a card is expanded, draw its charts after the DOM settles
+    if (expandedId !== null) {
+      const p = players.find(pl => pl.id === expandedId);
+      if (p) {
+        requestAnimationFrame(() => {
+          fetchElo(peTour).then(eloData => {
+            drawChartsForExpanded(p.id, eloData, p.surf);
+          });
+        });
+      }
     }
   }
 
@@ -1781,6 +2116,8 @@ requestAnimationFrame(() => setTimeout(() => {
       expandedId = null;
       document.getElementById('pe-input').value = '';
       render(allPlayers.slice(0, 20), allPlayers.length);
+      // Pre-fetch ELO history in background so it's ready when a card expands
+      fetchElo(tour);
       return;
     }
     document.getElementById('pe-loading').style.display = 'flex';
@@ -1791,11 +2128,13 @@ requestAnimationFrame(() => setTimeout(() => {
       .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(data => {
         peCache[tour] = data;
-        allPlayers = data;
-        expandedId = null;
+        allPlayers    = data;
+        expandedId    = null;
         document.getElementById('pe-input').value = '';
         document.getElementById('pe-loading').style.display = 'none';
         render(allPlayers.slice(0, 20), allPlayers.length);
+        // Pre-fetch ELO history in background
+        fetchElo(tour);
       })
       .catch(() => {
         document.getElementById('pe-loading').innerHTML =
