@@ -1122,9 +1122,92 @@ select.pred-input { cursor: pointer; }
   font-style: italic;
   padding: 10px 0 4px;
 }
+
+/* ─── PLAYER MODAL ──────────────────────────────────────────── */
+.pe-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+.pe-modal-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.pe-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-lit);
+  border-radius: 16px;
+  width: 800px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 28px 28px 24px;
+  position: relative;
+  box-shadow: 0 24px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(30,217,200,.08);
+}
+.pe-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.pe-modal-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+}
+.pe-modal-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 5px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pe-modal-close {
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 7px 11px;
+  flex-shrink: 0;
+  transition: background .15s, color .15s;
+}
+.pe-modal-close:hover { background: rgba(255,255,255,.12); color: var(--text); }
 </style>
 </head>
 <body>
+
+<!-- ═══════ PLAYER MODAL ════════════════════════════════════════ -->
+<div class="pe-modal-overlay" id="pe-modal-overlay">
+  <div class="pe-modal" id="pe-modal">
+    <div class="pe-modal-header">
+      <div>
+        <div class="pe-modal-name" id="pe-modal-name"></div>
+        <div class="pe-modal-sub" id="pe-modal-sub"></div>
+      </div>
+      <button class="pe-modal-close" id="pe-modal-close-btn">&times;</button>
+    </div>
+    <div id="pe-modal-body"></div>
+  </div>
+</div>
+
 <div class="wrap">
 
 <!-- ═══════ HEADER ═══════════════════════════════════════════ -->
@@ -1718,7 +1801,6 @@ requestAnimationFrame(() => setTimeout(() => {
   let eloCache     = {};   // tour → {player_id: eloRecord}
   let allPlayers   = [];
   let shownPlayers = [];
-  let expandedId   = null;
 
   // ── Helpers ──────────────────────────────────────────────────
   function pct(w, m) { return m ? Math.round(w / m * 100) + '%' : '—'; }
@@ -1752,8 +1834,6 @@ requestAnimationFrame(() => setTimeout(() => {
   function cardHTML(p) {
     const wr  = pct(p.wins, p.matches);
     const br  = p.bestRank === null ? '—' : '#' + Math.round(p.bestRank);
-    const exp = expandedId === p.id;
-
     const surfTags = Object.entries(p.surf)
       .filter(([, v]) => v.m >= 3)
       .sort((a, b) => b[1].m - a[1].m)
@@ -1762,68 +1842,10 @@ requestAnimationFrame(() => setTimeout(() => {
     const gsBadge  = p.gsWins    > 0 ? `<span class="pe-tag pe-tag-gs">GS ×${p.gsWins}</span>`            : '';
     const mstBadge = p.masterWins > 0 ? `<span class="pe-tag pe-tag-mst">Masters ×${p.masterWins}</span>` : '';
 
-    let detail = '';
-    if (exp) {
-      const span = p.firstYear === null ? '—'
-        : p.firstYear === p.lastYear ? String(p.firstYear)
-        : `${p.firstYear}–${p.lastYear}`;
-
-      const surfCells = ['Hard', 'Clay', 'Grass'].map(s => {
-        const d = p.surf[s] || {w:0, m:0};
-        return `<div class="pe-surf-cell pe-${s.toLowerCase()}">
-          <span class="pe-surf-cell-name">${s}</span>
-          <div class="pe-surf-cell-pct">${pct(d.w, d.m)}</div>
-          <div style="font-size:9.5px;color:var(--text-muted);margin-top:2px">${d.m} matches</div>
-        </div>`;
-      }).join('');
-
-      const topOpps = Object.entries(p.opps)
-        .sort((a, b) => (b[1].w + b[1].l) - (a[1].w + a[1].l))
-        .slice(0, 6)
-        .map(([name, rec]) => `<span class="pe-opp">${name} <em>${rec.w}–${rec.l}</em></span>`)
-        .join('');
-
-      const carpetM = p.surf.Carpet?.m || 0;
-      const carpetCell = carpetM >= 3
-        ? `<div class="pe-surf-cell" style="flex:1;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:7px 8px;text-align:center">
-            <span class="pe-surf-cell-name" style="display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">Carpet</span>
-            <div style="font-size:15px;font-weight:800;color:#b09cfc">${pct(p.surf.Carpet.w, p.surf.Carpet.m)}</div>
-            <div style="font-size:9.5px;color:var(--text-muted);margin-top:2px">${p.surf.Carpet.m} matches</div>
-          </div>` : '';
-
-      detail = `
-        <div class="pe-detail">
-          <div class="pe-dg">
-            <div><div class="pe-dl">Career span</div><div class="pe-dv">${span}</div></div>
-            <div><div class="pe-dl">Nationality</div><div class="pe-dv">${p.ioc}</div></div>
-            <div><div class="pe-dl">Plays</div><div class="pe-dv">${HAND_LBL[p.hand] || p.hand}</div></div>
-          </div>
-          <div class="pe-surf-trio">${surfCells}${carpetCell}</div>
-          ${topOpps ? `<div class="pe-opps-label">Most common opponents</div><div class="pe-opps">${topOpps}</div>` : ''}
-          <div class="pe-charts">
-            <div class="pe-chart-wrap" id="elo-wrap-${p.id}">
-              <div class="pe-chart-title">ELO Rating Over Time</div>
-              <canvas class="pe-chart-canvas" id="elo-canvas-${p.id}" height="130"></canvas>
-              <div class="pe-consistency-wrap" id="cons-wrap-${p.id}" style="display:none">
-                <span class="pe-consistency-label">Consistency score</span>
-                <div class="pe-consistency-track">
-                  <div class="pe-consistency-fill" id="cons-fill-${p.id}" style="width:0%"></div>
-                </div>
-                <span class="pe-consistency-val" id="cons-val-${p.id}"></span>
-              </div>
-            </div>
-            <div class="pe-chart-wrap" id="surf-wrap-${p.id}">
-              <div class="pe-chart-title">Win Rate by Surface</div>
-              <canvas class="pe-chart-canvas" id="surf-canvas-${p.id}" height="90"></canvas>
-            </div>
-          </div>
-        </div>`;
-    }
-
-    return `<div class="pe-card${exp ? ' expanded' : ''}" data-pid="${p.id}" onclick="peToggle('${p.id}')">
+    return `<div class="pe-card" data-pid="${p.id}" onclick="peToggle('${p.id}')">
       <div class="pe-card-top">
         <div class="pe-name">${p.name}</div>
-        <div class="pe-chevron">${exp ? '▾' : '▸'}</div>
+        <div class="pe-chevron">▸</div>
       </div>
       <div class="pe-stats-row">
         <span class="pe-stat-big">${p.matches}</span>
@@ -1836,7 +1858,6 @@ requestAnimationFrame(() => setTimeout(() => {
         <span class="pe-stat-big" style="font-size:14px">${br}</span>
       </div>
       <div class="pe-tags" style="margin-top:8px">${surfTags}${gsBadge}${mstBadge}</div>
-      ${detail}
     </div>`;
   }
 
@@ -2057,6 +2078,102 @@ requestAnimationFrame(() => setTimeout(() => {
     drawSurfChart(pid, surfData);
   }
 
+  // ── Modal ────────────────────────────────────────────────────
+
+  function detailHTML(p) {
+    const span = p.firstYear === null ? '—'
+      : p.firstYear === p.lastYear ? String(p.firstYear)
+      : `${p.firstYear}–${p.lastYear}`;
+
+    const surfCells = ['Hard', 'Clay', 'Grass'].map(s => {
+      const d = p.surf[s] || {w:0, m:0};
+      return `<div class="pe-surf-cell pe-${s.toLowerCase()}">
+        <span class="pe-surf-cell-name">${s}</span>
+        <div class="pe-surf-cell-pct">${pct(d.w, d.m)}</div>
+        <div style="font-size:9.5px;color:var(--text-muted);margin-top:2px">${d.m} matches</div>
+      </div>`;
+    }).join('');
+
+    const topOpps = Object.entries(p.opps)
+      .sort((a, b) => (b[1].w + b[1].l) - (a[1].w + a[1].l))
+      .slice(0, 6)
+      .map(([name, rec]) => `<span class="pe-opp">${name} <em>${rec.w}–${rec.l}</em></span>`)
+      .join('');
+
+    const carpetM = p.surf.Carpet?.m || 0;
+    const carpetCell = carpetM >= 3
+      ? `<div class="pe-surf-cell" style="flex:1;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:7px 8px;text-align:center">
+          <span class="pe-surf-cell-name" style="display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">Carpet</span>
+          <div style="font-size:15px;font-weight:800;color:#b09cfc">${pct(p.surf.Carpet.w, p.surf.Carpet.m)}</div>
+          <div style="font-size:9.5px;color:var(--text-muted);margin-top:2px">${p.surf.Carpet.m} matches</div>
+        </div>` : '';
+
+    return `
+      <div class="pe-dg">
+        <div><div class="pe-dl">Career span</div><div class="pe-dv">${span}</div></div>
+        <div><div class="pe-dl">Nationality</div><div class="pe-dv">${p.ioc}</div></div>
+        <div><div class="pe-dl">Plays</div><div class="pe-dv">${HAND_LBL[p.hand] || p.hand}</div></div>
+      </div>
+      <div class="pe-surf-trio">${surfCells}${carpetCell}</div>
+      ${topOpps ? `<div class="pe-opps-label">Most common opponents</div><div class="pe-opps">${topOpps}</div>` : ''}
+      <div class="pe-charts">
+        <div class="pe-chart-wrap" id="elo-wrap-${p.id}">
+          <div class="pe-chart-title">ELO Rating Over Time</div>
+          <canvas class="pe-chart-canvas" id="elo-canvas-${p.id}" height="160"></canvas>
+          <div class="pe-consistency-wrap" id="cons-wrap-${p.id}" style="display:none">
+            <span class="pe-consistency-label">Consistency score</span>
+            <div class="pe-consistency-track">
+              <div class="pe-consistency-fill" id="cons-fill-${p.id}" style="width:0%"></div>
+            </div>
+            <span class="pe-consistency-val" id="cons-val-${p.id}"></span>
+          </div>
+        </div>
+        <div class="pe-chart-wrap" id="surf-wrap-${p.id}">
+          <div class="pe-chart-title">Win Rate by Surface</div>
+          <canvas class="pe-chart-canvas" id="surf-canvas-${p.id}" height="90"></canvas>
+        </div>
+      </div>`;
+  }
+
+  function openModal(p) {
+    const overlay = document.getElementById('pe-modal-overlay');
+    const nameEl  = document.getElementById('pe-modal-name');
+    const subEl   = document.getElementById('pe-modal-sub');
+    const bodyEl  = document.getElementById('pe-modal-body');
+    if (!overlay) return;
+
+    const wr = pct(p.wins, p.matches);
+    const br = p.bestRank === null ? '—' : '#' + Math.round(p.bestRank);
+    nameEl.textContent = p.name;
+    subEl.innerHTML = `<span>${p.matches} matches</span><span>${wr} win rate</span><span>Best rank: ${br}</span>`;
+    bodyEl.innerHTML = detailHTML(p);
+
+    overlay.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+
+    requestAnimationFrame(() => {
+      fetchElo(peTour).then(eloData => {
+        drawChartsForExpanded(p.id, eloData, p.surf);
+      });
+    });
+  }
+
+  window.peCloseModal = function () {
+    const overlay = document.getElementById('pe-modal-overlay');
+    if (overlay) overlay.classList.remove('visible');
+    document.body.style.overflow = '';
+  };
+
+  document.getElementById('pe-modal-overlay').addEventListener('click', function (e) {
+    if (e.target === this) peCloseModal();
+  });
+
+  document.getElementById('pe-modal-close-btn').addEventListener('click', peCloseModal);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') peCloseModal();
+  });
+
   // ── Render ───────────────────────────────────────────────────
   function render(players, total) {
     shownPlayers = players;
@@ -2077,30 +2194,19 @@ requestAnimationFrame(() => setTimeout(() => {
       counter.textContent = `${players.length.toLocaleString()} player${players.length !== 1 ? 's' : ''}`;
     }
 
-    // If a card is expanded, draw its charts after the DOM settles
-    if (expandedId !== null) {
-      const p = players.find(pl => pl.id === expandedId);
-      if (p) {
-        requestAnimationFrame(() => {
-          fetchElo(peTour).then(eloData => {
-            drawChartsForExpanded(p.id, eloData, p.surf);
-          });
-        });
-      }
-    }
   }
 
   // ── Public toggle ────────────────────────────────────────────
   window.peToggle = function (id) {
-    expandedId = expandedId === id ? null : id;
-    render(shownPlayers,
-      shownPlayers.length < allPlayers.length ? allPlayers.length : undefined);
+    const p = shownPlayers.find(pl => pl.id === id)
+           || allPlayers.find(pl => pl.id === id);
+    if (p) openModal(p);
   };
 
   // ── Search ───────────────────────────────────────────────────
   document.getElementById('pe-input').addEventListener('input', function () {
     const q = this.value.trim().toLowerCase();
-    expandedId = null;
+    peCloseModal();
     if (!q) {
       render(allPlayers.slice(0, 20), allPlayers.length);
     } else {
@@ -2113,7 +2219,7 @@ requestAnimationFrame(() => setTimeout(() => {
   function loadTour(tour) {
     if (peCache[tour]) {
       allPlayers = peCache[tour];
-      expandedId = null;
+      peCloseModal();
       document.getElementById('pe-input').value = '';
       render(allPlayers.slice(0, 20), allPlayers.length);
       // Pre-fetch ELO history in background so it's ready when a card expands
@@ -2129,7 +2235,7 @@ requestAnimationFrame(() => setTimeout(() => {
       .then(data => {
         peCache[tour] = data;
         allPlayers    = data;
-        expandedId    = null;
+        peCloseModal();
         document.getElementById('pe-input').value = '';
         document.getElementById('pe-loading').style.display = 'none';
         render(allPlayers.slice(0, 20), allPlayers.length);
