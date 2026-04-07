@@ -5,7 +5,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m ':*)",
       "Bash(git push:*)",
-      "Bash(node --input-type=module)"
+      "Bash(node --input-type=module)",
+      "Read(//Users/tenzinglunn/tennis-predictor/{print int\\($1/1024/**)"
     ]
   }
 }

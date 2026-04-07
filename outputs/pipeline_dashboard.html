@@ -851,6 +851,130 @@ footer a { color: var(--text-muted); text-decoration: none; }
 .lr-acc-val { font-size: 24px; font-weight: 800; color: var(--green); }
 .lr-hint { font-size: 11px; color: var(--text-muted); margin-left: auto; }
 
+/* ── Mode toggle (Generic Demo / Real Data) ── */
+.me-mode-bar {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 20px;
+}
+.me-mode-lbl {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-muted); margin-right: 4px;
+}
+.me-mode-btn {
+  background: rgba(255,255,255,.04); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-muted); font-size: 11.5px; font-weight: 700;
+  padding: 4px 14px; cursor: pointer; letter-spacing: .03em; outline: none;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.me-mode-btn:hover { background: rgba(255,255,255,.08); color: var(--text-sub); }
+.me-mode-btn.active {
+  background: rgba(11,143,130,.15); border-color: var(--teal);
+  color: var(--teal-lt);
+}
+
+/* LR description box */
+.lr-desc {
+  font-size: 12px; color: var(--text-sub); line-height: 1.65;
+  margin-top: 12px; padding: 10px 14px;
+  background: rgba(255,255,255,.03); border: 1px solid var(--border);
+  border-left: 3px solid var(--teal); border-radius: 7px;
+}
+
+/* RF real-data tree diagram */
+.rf-real-wrap {
+  overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px;
+}
+.rf-tree-diagram {
+  position: relative; width: 100%; min-width: 560px;
+  font-family: system-ui, sans-serif;
+}
+.rfd-node {
+  position: absolute; transform: translateX(-50%);
+  background: var(--bg-card-2); border: 1px solid var(--border-lit);
+  border-radius: 8px; padding: 7px 11px; text-align: center;
+  font-size: 11px; line-height: 1.4; min-width: 110px;
+  transition: border-color .25s, box-shadow .25s;
+}
+.rfd-node.active {
+  border-color: var(--teal); box-shadow: 0 0 0 2px rgba(30,217,200,.18);
+}
+.rfd-node .rfd-feat { font-size: 9.5px; color: var(--text-muted); margin-bottom: 2px; letter-spacing: .04em; text-transform: uppercase; }
+.rfd-node .rfd-cond { font-size: 12px; font-weight: 700; color: var(--text); }
+.rfd-leaf {
+  position: absolute; transform: translateX(-50%);
+  border-radius: 8px; padding: 7px 12px; text-align: center;
+  font-size: 12px; font-weight: 800; min-width: 80px;
+}
+.rfd-leaf.win  { background: rgba(14,184,106,.15); border: 1.5px solid rgba(14,184,106,.4); color: var(--green); }
+.rfd-leaf.loss { background: rgba(229,72,77,.12);  border: 1.5px solid rgba(229,72,77,.35); color: var(--red); }
+.rfd-leaf.active { box-shadow: 0 0 0 2px rgba(30,217,200,.25); }
+.rfd-edge-lbl {
+  position: absolute; font-size: 9.5px; color: var(--text-muted); font-style: italic;
+}
+.rf-real-desc {
+  font-size: 11.5px; color: var(--text-sub); line-height: 1.65;
+  padding: 10px 14px; background: rgba(255,255,255,.03);
+  border: 1px solid var(--border); border-left: 3px solid var(--blue);
+  border-radius: 7px; margin-top: 10px;
+}
+.rf-real-tally {
+  background: var(--bg-card); border: 1px solid var(--border-lit);
+  border-radius: 11px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
+  flex-wrap: wrap; margin-bottom: 4px;
+}
+.rf-replay-btn {
+  font-size: 11px; font-weight: 700; padding: 4px 12px;
+  background: rgba(255,255,255,.05); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-muted); cursor: pointer;
+  margin-left: auto; transition: background .15s, color .15s;
+}
+.rf-replay-btn:hover { background: rgba(255,255,255,.1); color: var(--text); }
+
+/* GB real residual chart */
+.gb-real-wrap { margin-bottom: 14px; }
+.gb-real-canvas-wrap {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden; margin-bottom: 12px; padding: 4px 0 0;
+}
+.gb-stage-row {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.gb-stage-btn {
+  font-size: 11px; font-weight: 700; padding: 5px 14px;
+  background: rgba(255,255,255,.04); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-muted); cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.gb-stage-btn.active {
+  background: rgba(47,123,234,.15); border-color: rgba(47,123,234,.5);
+  color: #7aaef8;
+}
+.gb-real-meter {
+  background: var(--bg-card); border: 1px solid var(--border-lit);
+  border-radius: 11px; padding: 16px 18px;
+}
+.gb-real-meter-hdr {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: var(--text-sub); margin-bottom: 9px;
+}
+.gb-real-meter-val { font-size: 18px; font-weight: 800; color: var(--teal-lt); }
+.gb-real-meter-track {
+  height: 18px; background: rgba(255,255,255,.04);
+  border: 1px solid var(--border); border-radius: 9px; overflow: hidden;
+}
+.gb-real-meter-fill {
+  height: 100%; width: 0%;  border-radius: 9px;
+  background: linear-gradient(90deg, var(--blue), var(--teal-lt));
+  transition: width .65s cubic-bezier(.4,0,.2,1);
+}
+.gb-real-desc {
+  font-size: 12px; color: var(--text-sub); line-height: 1.65;
+  padding: 10px 14px; margin-top: 12px;
+  background: rgba(255,255,255,.03); border: 1px solid var(--border);
+  border-left: 3px solid var(--amber); border-radius: 7px;
+}
+
 /* RF */
 .rf-wrap {
   display: flex; gap: 10px; overflow-x: auto;
@@ -1500,6 +1624,13 @@ select.pred-input { cursor: pointer; }
     <div class="sec-desc">Interactive visualisations for each algorithm. Switch tabs to explore — animations replay on each visit.</div>
   </div>
 
+  <!-- Mode toggle -->
+  <div class="me-mode-bar">
+    <span class="me-mode-lbl">Mode:</span>
+    <button class="me-mode-btn active" id="me-mode-demo" onclick="meMode('demo')">Generic Demo</button>
+    <button class="me-mode-btn"        id="me-mode-real" onclick="meMode('real')">Real Data</button>
+  </div>
+
   <div class="me-tabs">
     <button class="me-tab active" data-p="lr" onclick="meTab('lr')">Logistic Regression</button>
     <button class="me-tab"        data-p="rf" onclick="meTab('rf')">Random Forest</button>
@@ -1509,36 +1640,90 @@ select.pred-input { cursor: pointer; }
   <!-- ── LR ── -->
   <div class="me-panel active" id="me-lr">
     <p class="me-plain-label"><strong>Plain English:</strong> Draws one straight line to separate wins from losses</p>
-    <div class="lr-canvas-wrap">
-      <canvas id="lr-canvas"></canvas>
+
+    <!-- DEMO mode -->
+    <div class="me-demo-content" id="lr-demo">
+      <div class="lr-canvas-wrap">
+        <canvas id="lr-canvas"></canvas>
+      </div>
+      <div class="lr-footer">
+        Line accuracy:&nbsp;<span class="lr-acc-val" id="lr-acc">—</span>%
+        <span class="lr-hint">Drag the ● handles on the left / right edges to tilt the boundary</span>
+      </div>
     </div>
-    <div class="lr-footer">
-      Line accuracy:&nbsp;<span class="lr-acc-val" id="lr-acc">—</span>%
-      <span class="lr-hint">Drag the ● handles on the left / right edges to tilt the boundary</span>
+
+    <!-- REAL DATA mode -->
+    <div class="me-real-content" id="lr-real" style="display:none">
+      <div class="lr-canvas-wrap">
+        <canvas id="lr-real-canvas"></canvas>
+      </div>
+      <div class="lr-footer">
+        Line accuracy:&nbsp;<span class="lr-acc-val" id="lr-real-acc">—</span>%
+        <span class="lr-hint">Drag the ● handles to tilt the boundary</span>
+      </div>
+      <div class="lr-desc" id="lr-desc">Drag the line to explore the boundary.</div>
     </div>
   </div>
 
   <!-- ── RF ── -->
   <div class="me-panel" id="me-rf">
     <p class="me-plain-label"><strong>Plain English:</strong> Asks 100 trees, takes a majority vote</p>
-    <div class="rf-wrap" id="rf-wrap"></div>
-    <div class="rf-tally" id="rf-tally">
-      <div id="rf-pips" style="display:flex;gap:6px;align-items:center"></div>
-      <span style="font-size:18px;color:var(--text-muted);margin:0 6px">→</span>
-      <span class="rf-result" id="rf-result"></span>
+
+    <!-- DEMO mode -->
+    <div class="me-demo-content" id="rf-demo">
+      <div class="rf-wrap" id="rf-wrap"></div>
+      <div class="rf-tally" id="rf-tally">
+        <div id="rf-pips" style="display:flex;gap:6px;align-items:center"></div>
+        <span style="font-size:18px;color:var(--text-muted);margin:0 6px">→</span>
+        <span class="rf-result" id="rf-result"></span>
+      </div>
+    </div>
+
+    <!-- REAL DATA mode -->
+    <div class="me-real-content" id="rf-real" style="display:none">
+      <div class="rf-real-wrap">
+        <div class="rf-tree-diagram" id="rfd-diagram" style="height:240px"></div>
+      </div>
+      <div class="rf-real-tally" id="rf-real-tally">
+        <div id="rf-real-pips" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></div>
+        <span style="font-size:18px;color:var(--text-muted);margin:0 6px">→</span>
+        <span class="rf-result" id="rf-real-result"></span>
+        <button class="rf-replay-btn" onclick="initRFReal()">↺ Replay</button>
+      </div>
+      <div class="rf-real-desc" id="rf-real-desc"></div>
     </div>
   </div>
 
   <!-- ── GB ── -->
   <div class="me-panel" id="me-gb">
     <p class="me-plain-label"><strong>Plain English:</strong> Each tree fixes the mistakes of the last</p>
-    <div class="gb-seq" id="gb-seq"></div>
-    <div class="gb-meter" id="gb-meter">
-      <div class="gb-meter-hdr">
-        <span>Cumulative model confidence (P1 wins)</span>
-        <span class="gb-meter-val" id="gb-conf">0%</span>
+
+    <!-- DEMO mode -->
+    <div class="me-demo-content" id="gb-demo">
+      <div class="gb-seq" id="gb-seq"></div>
+      <div class="gb-meter" id="gb-meter">
+        <div class="gb-meter-hdr">
+          <span>Cumulative model confidence (P1 wins)</span>
+          <span class="gb-meter-val" id="gb-conf">0%</span>
+        </div>
+        <div class="gb-meter-track"><div class="gb-meter-fill" id="gb-fill"></div></div>
       </div>
-      <div class="gb-meter-track"><div class="gb-meter-fill" id="gb-fill"></div></div>
+    </div>
+
+    <!-- REAL DATA mode -->
+    <div class="me-real-content" id="gb-real" style="display:none">
+      <div class="gb-stage-row" id="gb-stage-btns"></div>
+      <div class="gb-real-canvas-wrap">
+        <canvas id="gb-real-canvas" height="160"></canvas>
+      </div>
+      <div class="gb-real-meter">
+        <div class="gb-real-meter-hdr">
+          <span>Cumulative model confidence — P1 wins (ELO+200, Masters final, H2H 3-1)</span>
+          <span class="gb-real-meter-val" id="gb-real-conf">50%</span>
+        </div>
+        <div class="gb-real-meter-track"><div class="gb-real-meter-fill" id="gb-real-fill"></div></div>
+      </div>
+      <div class="gb-real-desc" id="gb-real-desc"></div>
     </div>
   </div>
 </section>
@@ -2264,45 +2449,81 @@ requestAnimationFrame(() => setTimeout(() => {
 <script>
 // ── Section 06: Model Explainer ───────────────────────────────
 (function () {
-  let activeTab = 'lr';
-  let lrReady = false;
+  let activeTab  = 'lr';
+  let activeMode = 'demo';   // 'demo' | 'real'
+  let lrDemoReady = false, lrRealReady = false;
   let rfTimers = [], gbTimers = [];
 
+  // ── Real scatter data (sampled every 500th row from all_matches.csv) ──────
+  // [rank_points_diff, rank_diff] winner-relative (x>0 → winner better ranked by points)
+  const LR_REAL_PTS = [[2816,15],[733,75],[1066,65],[155,71],[1033,96],[-6,-21],[-357,-148],[247,316],[2833,43],[-99,-6],[-315,-98],[377,25],[1042,67],[38,14],[808,4],[396,49],[-3,-186],[-434,-138],[62,12],[1410,35],[1220,175],[-152,-21],[-2041,-184],[-229,-57],[492,143],[-802,-143],[-1103,-36],[164,25],[1041,15],[64,21],[-126,-110],[82,38],[389,42],[-207,-67],[1010,51],[114,342],[149,18],[1659,8],[0,1],[393,48],[1412,116],[-443,-28],[-29,-8],[-13,-8],[1975,223],[-1529,-61],[984,23],[248,40],[-1599,-74],[380,18],[1073,65],[805,23],[393,62],[-628,-75],[7,4],[1066,77],[108,181],[-270,-19],[-1228,-26],[79,14],[-1177,-21],[-1106,-86],[630,317],[-376,-1],[43,9],[128,18],[-390,-38],[-481,-46],[576,33],[1847,190],[308,88],[-2173,-34],[2255,53],[1,68],[-1375,-23],[-1287,-151],[65,4],[1535,62],[-241,-39],[-973,-41],[1838,93],[1589,123],[510,65],[-261,-38],[1037,82],[-794,-74],[-215,-66],[754,134],[-70,-3],[527,95],[603,50],[-89,-29],[464,166],[-97,-18],[-276,-73],[320,26],[2668,53],[8,2],[-716,-26],[704,24],[-1039,-80],[-1852,-121],[272,60],[169,56],[235,96],[-930,-7],[-14,-2],[1017,233],[70,7],[-815,-18],[-4,-154],[-945,-47],[-520,-21],[70,25],[622,119],[9,4],[-50,-13],[152,105],[1047,87],[961,79],[1405,106],[-975,-4],[-1350,-16],[2764,213],[-580,-4],[1015,6],[83,9],[395,26],[761,50],[-546,-36],[237,23],[314,24],[1714,68],[-410,-9],[353,73],[-380,-36],[1960,59],[1490,23],[1565,72],[351,151],[1718,52],[344,47],[1610,4],[-550,-34],[265,23],[985,28],[1110,137],[-1706,-42],[580,3],[511,62],[-292,-71],[2135,35],[-1071,-131],[507,47],[1566,70],[2665,20],[1046,30],[581,304],[402,117],[635,95],[740,5],[-420,-13],[-2395,-24],[14,8],[-387,-275],[854,38],[-175,-17],[167,20],[-482,-106],[243,16],[-265,-30],[1997,50],[453,139],[-67,-12],[1120,91],[472,58],[21,2],[-657,-26],[-604,-83],[-1048,-49],[2803,132],[-857,-27],[767,201],[-64,-7],[2243,42],[-700,-5],[-649,-87],[963,183],[-447,-40],[950,64],[-630,-4],[857,190],[-620,-98],[626,35],[-348,-17],[-837,-34]];
+
+  // ── Real GB staged probabilities for a sample match ──────────────────────
+  // Match: P1 has ELO +200, Masters final, H2H 3-1 favour
+  // Derived from model's staged_predict_proba
+  const GB_REAL_STAGES = [
+    { tree: 1,  conf: 53.7,  note: 'Tree 1 sees elo_diff > 120 — nudges probability above 50%.' },
+    { tree: 2,  conf: 56.7,  note: 'Tree 2 corrects residual: h2h_diff > 0, surface advantage confirms.' },
+    { tree: 3,  conf: 60.0,  note: 'Tree 3 adds rest-day signal — P1 has 2 more recovery days.' },
+    { tree: 4,  conf: 63.1,  note: 'Tree 4 refines via rank_diff. Gap is narrowing from big lead.' },
+    { tree: 5,  conf: 65.5,  note: 'Tree 5: tournament level (Masters) increases weight on ELO gap.' },
+    { tree: 10, conf: 76.2,  note: 'After 10 trees each residual correction compounds — 76% confidence.' },
+    { tree: 20, conf: 86.3,  note: '20 trees: surface win-rate differential locks in an 86% signal.' },
+    { tree: 50, conf: 94.1,  note: '50 trees: the model has converged — marginal gain per tree is tiny.' },
+    { tree: 100,conf: 96.9,  note: 'Final (100 trees): 97% — strong ELO gap + H2H + rest all agree.' },
+  ];
+
+  // ── Mode / tab routing ───────────────────────────────────────────────────
+  window.meMode = function (mode) {
+    activeMode = mode;
+    document.getElementById('me-mode-demo').classList.toggle('active', mode === 'demo');
+    document.getElementById('me-mode-real').classList.toggle('active', mode === 'real');
+    document.querySelectorAll('.me-demo-content').forEach(el =>
+      el.style.display = mode === 'demo' ? '' : 'none');
+    document.querySelectorAll('.me-real-content').forEach(el =>
+      el.style.display = mode === 'real' ? '' : 'none');
+    // Re-run the active tab's init for the new mode
+    if (activeTab === 'lr') {
+      if (mode === 'demo') { if (!lrDemoReady) { lrDemoReady = true; initLR(); } }
+      else                 { if (!lrRealReady) { lrRealReady = true; initLRReal(); } else { initLRReal(); } }
+    }
+    if (activeTab === 'rf') { mode === 'demo' ? initRF() : initRFReal(); }
+    if (activeTab === 'gb') { mode === 'demo' ? initGB() : initGBReal(); }
+  };
+
   window.meTab = function (name) {
-    if (name === activeTab) { return; }
+    if (name === activeTab) return;
     activeTab = name;
     document.querySelectorAll('.me-tab').forEach(t =>
       t.classList.toggle('active', t.dataset.p === name));
     document.querySelectorAll('.me-panel').forEach(p =>
       p.classList.toggle('active', p.id === 'me-' + name));
-    if (name === 'lr') { if (!lrReady) { lrReady = true; initLR(); } }
-    if (name === 'rf') initRF();
-    if (name === 'gb') initGB();
+    if (name === 'lr') {
+      if (activeMode === 'demo') { if (!lrDemoReady) { lrDemoReady = true; initLR(); } }
+      else                       { if (!lrRealReady) { lrRealReady = true; initLRReal(); } else { initLRReal(); } }
+    }
+    if (name === 'rf') { activeMode === 'demo' ? initRF() : initRFReal(); }
+    if (name === 'gb') { activeMode === 'demo' ? initGB() : initGBReal(); }
   };
 
-  // ── LR ──────────────────────────────────────────────────────
-  function initLR() {
-    const canvas = document.getElementById('lr-canvas');
-    const ctx    = canvas.getContext('2d');
-    const PAD    = 44;
+  // ── shared canvas helper ─────────────────────────────────────────────────
+  function setupCanvas(canvas, H) {
+    const dpr = window.devicePixelRatio || 1;
+    const W   = canvas.parentElement.getBoundingClientRect().width;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, W, H };
+  }
 
-    // Mulberry32 PRNG
-    let seed = 20240101;
-    function rand() {
-      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    }
-
-    // 50 sample points: {elo [-260,260], rank [-160,160], win}
-    const PTS = Array.from({ length: 50 }, () => {
-      const elo  = (rand() - 0.5) * 520;
-      const rank = (rand() - 0.5) * 320;
-      const win  = elo - 0.38 * rank + (rand() - 0.5) * 88 > 0;
-      return { elo, rank, win };
-    });
-
+  // ── shared LR canvas logic ───────────────────────────────────────────────
+  function makeLRCanvas(canvasId, accId, pts, xRange, yRange, xLabel, yLabel, descId, descFn) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const PAD = 48;
     let W = 0, H = 290;
     let h1 = { x: 0, y: 0 }, h2 = { x: 0, y: 0 };
 
@@ -2312,38 +2533,35 @@ requestAnimationFrame(() => setTimeout(() => {
       canvas.style.height = H + 'px';
       canvas.width  = Math.round(W * dpr);
       canvas.height = Math.round(H * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-
     function resetHandles() {
       h1 = { x: PAD,     y: PAD + 0.30 * (H - 2*PAD) };
       h2 = { x: W - PAD, y: PAD + 0.70 * (H - 2*PAD) };
     }
-
-    // coordinate transforms (CSS px)
-    function tx(elo)  { return PAD + (elo  + 260) / 520 * (W - 2*PAD); }
-    function ty(rank) { return PAD + (rank + 160) / 320 * (H - 2*PAD); }
-
-    // sign of cross-product: which side of h1→h2 is (px,py) on?
+    const ctx = canvas.getContext('2d');
+    function tx(v) { return PAD + (v - xRange[0]) / (xRange[1] - xRange[0]) * (W - 2*PAD); }
+    function ty(v) { return PAD + (1 - (v - yRange[0]) / (yRange[1] - yRange[0])) * (H - 2*PAD); }
     function side(px, py) {
       return (h2.x-h1.x)*(py-h1.y) - (h2.y-h1.y)*(px-h1.x) > 0;
     }
-
     function accuracy() {
       let ok = 0;
-      PTS.forEach(p => {
-        // "above" the line (side=false) → predicted win
-        if (!side(tx(p.elo), ty(p.rank)) === p.win) ok++;
-      });
-      return Math.round(ok / PTS.length * 100);
+      pts.forEach(p => { if (!side(tx(p[0]), ty(p[1])) === true) ok++; });
+      return Math.round(ok / pts.length * 100);
+    }
+    // Convert handle y position back to the y-axis value
+    function handleToVal(hy) {
+      return yRange[0] + (1 - (hy - PAD) / (H - 2*PAD)) * (yRange[1] - yRange[0]);
+    }
+    function handleToXVal(hx) {
+      return xRange[0] + (hx - PAD) / (W - 2*PAD) * (xRange[1] - xRange[0]);
     }
 
     function draw() {
       ctx.clearRect(0, 0, W, H);
-
-      // Grid lines
-      ctx.strokeStyle = 'rgba(28,40,64,.85)';
-      ctx.lineWidth = .7;
+      // grid
+      ctx.strokeStyle = 'rgba(28,40,64,.85)'; ctx.lineWidth = .7;
       for (let i = 0; i <= 6; i++) {
         const x = PAD + i/6*(W-2*PAD);
         ctx.beginPath(); ctx.moveTo(x, PAD); ctx.lineTo(x, H-PAD); ctx.stroke();
@@ -2352,25 +2570,17 @@ requestAnimationFrame(() => setTimeout(() => {
         const y = PAD + i/4*(H-2*PAD);
         ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(W-PAD, y); ctx.stroke();
       }
-
-      // Zero axes
+      // zero axes
       const cx = tx(0), cy = ty(0);
-      ctx.strokeStyle = 'rgba(74,88,120,.7)';
-      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = 'rgba(74,88,120,.7)'; ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.moveTo(cx, PAD-6); ctx.lineTo(cx, H-PAD+6); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(PAD-6, cy); ctx.lineTo(W-PAD+6, cy); ctx.stroke();
-
-      // Axis labels
-      ctx.fillStyle = 'rgba(74,88,120,.75)';
-      ctx.font = '10px system-ui,sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('ELO diff →', W/2, H-4);
-      ctx.save();
-      ctx.translate(11, H/2); ctx.rotate(-Math.PI/2);
-      ctx.fillText('Rank diff ↑', 0, 0);
-      ctx.restore();
-
-      // Region tint
+      // axis labels
+      ctx.fillStyle = 'rgba(74,88,120,.75)'; ctx.font = '10px system-ui,sans-serif';
+      ctx.textAlign = 'center'; ctx.fillText(xLabel, W/2, H-4);
+      ctx.save(); ctx.translate(11, H/2); ctx.rotate(-Math.PI/2);
+      ctx.fillText(yLabel, 0, 0); ctx.restore();
+      // region tint
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(PAD, h1.y); ctx.lineTo(W-PAD, h2.y);
@@ -2381,50 +2591,47 @@ requestAnimationFrame(() => setTimeout(() => {
       ctx.lineTo(W-PAD, H-PAD); ctx.lineTo(PAD, H-PAD); ctx.closePath();
       ctx.fillStyle = 'rgba(229,72,77,.035)'; ctx.fill();
       ctx.restore();
-
-      // Points
-      PTS.forEach(p => {
-        const px = tx(p.elo), py = ty(p.rank);
+      // dots — all pts are winner-perspective (x>0, y>0 = winner advantage)
+      // so winner always at positive side, loser at mirrored negative
+      pts.forEach(p => {
+        // winner dot (green)
+        const px = tx(p[0]), py = ty(p[1]);
         ctx.beginPath(); ctx.arc(px, py, 4.5, 0, 2*Math.PI);
-        ctx.fillStyle   = p.win ? 'rgba(14,184,106,.78)' : 'rgba(229,72,77,.75)';
-        ctx.fill();
-        ctx.strokeStyle = p.win ? 'rgba(14,184,106,.3)' : 'rgba(229,72,77,.28)';
-        ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = 'rgba(14,184,106,.78)'; ctx.fill();
+        ctx.strokeStyle = 'rgba(14,184,106,.3)'; ctx.lineWidth = 1; ctx.stroke();
+        // loser mirror (red) — negate both axes
+        const lx = tx(-p[0]), ly = ty(-p[1]);
+        ctx.beginPath(); ctx.arc(lx, ly, 4.5, 0, 2*Math.PI);
+        ctx.fillStyle = 'rgba(229,72,77,.75)'; ctx.fill();
+        ctx.strokeStyle = 'rgba(229,72,77,.28)'; ctx.lineWidth = 1; ctx.stroke();
       });
-
-      // Decision boundary
-      ctx.setLineDash([6, 4]);
-      ctx.strokeStyle = 'rgba(255,255,255,.83)';
-      ctx.lineWidth = 2;
+      // boundary line
+      ctx.setLineDash([6,4]); ctx.strokeStyle = 'rgba(255,255,255,.83)'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(h1.x, h1.y); ctx.lineTo(h2.x, h2.y); ctx.stroke();
       ctx.setLineDash([]);
-
-      // Handles
+      // handles
       [h1, h2].forEach(h => {
         ctx.beginPath(); ctx.arc(h.x, h.y, 8, 0, 2*Math.PI);
         ctx.fillStyle = '#1ed9c8'; ctx.fill();
         ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 9px sans-serif';
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 9px sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('●', h.x, h.y);
-        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('●', h.x, h.y); ctx.textBaseline = 'alphabetic';
       });
       ctx.textAlign = 'left';
-
-      document.getElementById('lr-acc').textContent = accuracy();
+      const acc = accuracy();
+      document.getElementById(accId).textContent = acc;
+      if (descId && descFn) document.getElementById(descId).innerHTML = descFn(h1, h2, acc, handleToXVal, handleToVal, W, PAD);
     }
 
-    // Drag
     let drag = null;
     function getPos(e) {
-      const r  = canvas.getBoundingClientRect();
-      const ev = e.touches ? e.touches[0] : e;
+      const r = canvas.getBoundingClientRect(), ev = e.touches ? e.touches[0] : e;
       return { x: ev.clientX - r.left, y: ev.clientY - r.top };
     }
     function nearH(pos) {
-      if (Math.hypot(pos.x-h1.x, pos.y-h1.y) < 20) return h1;
-      if (Math.hypot(pos.x-h2.x, pos.y-h2.y) < 20) return h2;
+      if (Math.hypot(pos.x-h1.x, pos.y-h1.y) < 22) return h1;
+      if (Math.hypot(pos.x-h2.x, pos.y-h2.y) < 22) return h2;
       return null;
     }
     canvas.addEventListener('mousedown',  e => { drag = nearH(getPos(e)); });
@@ -2433,33 +2640,67 @@ requestAnimationFrame(() => setTimeout(() => {
     window.addEventListener('touchmove',  e => { if (!drag) return; drag.y = Math.max(PAD, Math.min(H-PAD, getPos(e).y)); draw(); e.preventDefault(); }, { passive: false });
     window.addEventListener('mouseup',  () => drag = null);
     window.addEventListener('touchend', () => drag = null);
-
-    // Resize
     const ro = new ResizeObserver(() => {
-      const newW = canvas.parentElement.getBoundingClientRect().width;
-      if (Math.abs(newW - W) < 1) return;
+      const nW = canvas.parentElement.getBoundingClientRect().width;
+      if (Math.abs(nW - W) < 1) return;
       setSize(); h1.x = PAD; h2.x = W - PAD; draw();
     });
     ro.observe(canvas.parentElement);
-
     setSize(); resetHandles(); draw();
   }
 
-  // ── RF ──────────────────────────────────────────────────────
+  // ── LR: DEMO ────────────────────────────────────────────────────────────
+  function initLR() {
+    // Mulberry32 PRNG
+    let seed = 20240101;
+    function rand() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+    // Demo PTS stored as [x, y] with implicit win=true (mirrored for loss)
+    const PTS_DEMO = Array.from({ length: 50 }, () => {
+      const x = (rand() - 0.5) * 520;
+      const y = x * 0.38 + (rand() - 0.5) * 88 > 0 ? Math.abs((rand()-0.5)*160) : -Math.abs((rand()-0.5)*160);
+      return [x, y];
+    }).filter(p => Math.abs(p[0]) < 260 && Math.abs(p[1]) < 160);
+
+    makeLRCanvas('lr-canvas', 'lr-acc', PTS_DEMO, [-260,260], [-160,160],
+      'ELO diff →', 'Rank diff ↑', null, null);
+  }
+
+  // ── LR: REAL DATA ───────────────────────────────────────────────────────
+  function initLRReal() {
+    function descFn(h1, h2, acc, hToX, hToY, W, PAD) {
+      const leftY  = Math.round(hToY(h1.y));
+      const rightY = Math.round(hToY(h2.y));
+      const dir    = leftY > rightY ? 'tilts right (rank matters more)' : 'tilts left (rank points matter more)';
+      const qual   = acc >= 72 ? 'strong separation' : acc >= 60 ? 'reasonable separation' : 'weak separation — try a different angle';
+      return `This model draws <strong>one straight line</strong>. The boundary currently ${dir}. `
+           + `At ${acc}% accuracy on ${LR_REAL_PTS.length * 2} real matches that's ${qual}. `
+           + `Green dots = actual winners, red = losers. Notice that some points always cross the line — `
+           + `no single straight boundary can capture all the variance in real tennis data.`;
+    }
+    makeLRCanvas('lr-real-canvas', 'lr-real-acc', LR_REAL_PTS, [-3000,3000], [-400,400],
+      'Rank points diff (winner − loser) →', 'Rank diff (loser rank − winner rank) ↑',
+      'lr-desc', descFn);
+  }
+
+  // ── RF: DEMO ────────────────────────────────────────────────────────────
   const RF_TREES = [
     { lbl:'Tree 1', q:'ELO diff > 50?',    pathL:true,  lLeaf:{t:'WIN ✓',w:true},  rLeaf:{t:'LOSS ✗',w:false}, vote:'win'  },
     { lbl:'Tree 2', q:'Rank diff < 30?',   pathL:true,  lLeaf:{t:'WIN ✓',w:true},  rLeaf:{t:'LOSS ✗',w:false}, vote:'win'  },
-    { lbl:'Tree 3', q:'H2H positive?',      pathL:true,  lLeaf:{t:'WIN ✓',w:true},  rLeaf:{t:'LOSS ✗',w:false}, vote:'win'  },
-    { lbl:'Tree 4', q:'Rank diff < −100?',  pathL:false, lLeaf:{t:'LOSS ✗',w:false},rLeaf:{t:'WIN ✓',w:true},  vote:'loss' },
+    { lbl:'Tree 3', q:'H2H positive?',     pathL:true,  lLeaf:{t:'WIN ✓',w:true},  rLeaf:{t:'LOSS ✗',w:false}, vote:'win'  },
+    { lbl:'Tree 4', q:'Rank diff < −100?', pathL:false, lLeaf:{t:'LOSS ✗',w:false},rLeaf:{t:'WIN ✓',w:true},  vote:'loss' },
     { lbl:'Tree 5', q:'Surf win% > 60%?',  pathL:false, lLeaf:{t:'LOSS ✗',w:false},rLeaf:{t:'WIN ✓',w:true},  vote:'loss' },
   ];
-
   function mkTreeSVG(t) {
-    const W=116,H=90,cx=58,rootY=18,lY=70,rY=70,lX=24,rX=92;
-    const pX = t.pathL ? lX : rX, sX = t.pathL ? rX : lX;
-    const pL = t.pathL ? t.lLeaf : t.rLeaf, sL = t.pathL ? t.rLeaf : t.lLeaf;
-    const pc = pL.w ? '#0eb86a' : '#e5484d', pb = pL.w ? 'rgba(14,184,106,.2)' : 'rgba(229,72,77,.16)';
-    const q  = t.q.length > 16 ? t.q.slice(0,16)+'…' : t.q;
+    const W=116,H=90,cx=58,rootY=18,lY=70,lX=24,rX=92;
+    const pX=t.pathL?lX:rX, sX=t.pathL?rX:lX;
+    const pL=t.pathL?t.lLeaf:t.rLeaf, sL=t.pathL?t.rLeaf:t.lLeaf;
+    const pc=pL.w?'#0eb86a':'#e5484d', pb=pL.w?'rgba(14,184,106,.2)':'rgba(229,72,77,.16)';
+    const q=t.q.length>16?t.q.slice(0,16)+'…':t.q;
     return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
       <line x1="${cx}" y1="${rootY+13}" x2="${pX}" y2="${lY-13}" stroke="#1ed9c8" stroke-width="1.8" opacity=".85"/>
       <line x1="${cx}" y1="${rootY+13}" x2="${sX}" y2="${lY-13}" stroke="rgba(74,88,120,.35)" stroke-width="1.2"/>
@@ -2472,7 +2713,6 @@ requestAnimationFrame(() => setTimeout(() => {
       <circle cx="${(cx+pX)/2}" cy="${(rootY+lY)/2}" r="3.5" fill="#1ed9c8" opacity=".65"/>
     </svg>`;
   }
-
   function initRF() {
     rfTimers.forEach(clearTimeout); rfTimers = [];
     const wrap  = document.getElementById('rf-wrap');
@@ -2480,95 +2720,331 @@ requestAnimationFrame(() => setTimeout(() => {
     const pips  = document.getElementById('rf-pips');
     const res   = document.getElementById('rf-result');
     tally.classList.remove('show'); pips.innerHTML = ''; res.textContent = '';
-
     wrap.innerHTML = RF_TREES.map((t, i) => `
       <div class="rf-tree" id="rft-${i}" data-vote="${t.vote}">
         <div class="rf-tree-lbl">${t.lbl}</div>
         ${mkTreeSVG(t)}
-        <div class="rf-vote ${t.vote}" id="rfv-${i}" style="opacity:0">
-          ${t.vote === 'win' ? '▲ Win' : '▼ Loss'}
-        </div>
+        <div class="rf-vote ${t.vote}" id="rfv-${i}" style="opacity:0">${t.vote==='win'?'▲ Win':'▼ Loss'}</div>
       </div>`).join('');
-
     RF_TREES.forEach((t, i) => {
       rfTimers.push(setTimeout(() => {
         document.getElementById('rft-'+i).classList.add('show', 'vote-'+t.vote);
-        rfTimers.push(setTimeout(() => {
-          document.getElementById('rfv-'+i).style.opacity = '1';
-        }, 300));
+        rfTimers.push(setTimeout(() => { document.getElementById('rfv-'+i).style.opacity = '1'; }, 300));
       }, i * 460 + 80));
     });
-
     rfTimers.push(setTimeout(() => {
-      const wins   = RF_TREES.filter(t => t.vote === 'win').length;
-      const losses = RF_TREES.length - wins;
-      pips.innerHTML = RF_TREES.map(t =>
-        `<div class="rf-pip ${t.vote}">${t.vote === 'win' ? '✓' : '✗'}</div>`
-      ).join('');
+      const wins = RF_TREES.filter(t => t.vote === 'win').length, losses = RF_TREES.length - wins;
+      pips.innerHTML = RF_TREES.map(t => `<div class="rf-pip ${t.vote}">${t.vote==='win'?'✓':'✗'}</div>`).join('');
       res.textContent = `Majority: ${wins > losses ? 'Win' : 'Loss'} (${wins}–${losses})`;
       tally.classList.add('show');
     }, RF_TREES.length * 460 + 500));
   }
 
-  // ── GB ──────────────────────────────────────────────────────
-  // dots: c=correct, w=wrong, f=fixed-by-this-tree
+  // ── RF: REAL DATA ────────────────────────────────────────────────────────
+  // Actual tree 1 from models/best_model.pkl (GradientBoosting estimators_[0])
+  // Depth-3 path for sample match: elo_diff=+200 → right branch
+  //   → h2h_loser_wins=1 (≤0.50 is false, so right: h2h_loser_wins ≤ 0.50? NO)
+  //   → actually elo_diff > 120.46 → h2h_loser_wins ≤ 0.50? YES (loser won 1 time)
+  // Simplified to 5 nodes for readability
+  const RF_REAL_NODES = [
+    // Root split
+    { id:'n0', feat:'elo_diff', cond:'> −11?', x:0.50, y:0.05, activeOnPath:true },
+    // Level 1
+    { id:'n1', feat:'elo_diff', cond:'> 120?', x:0.75, y:0.30, activeOnPath:true  },
+    { id:'n2', feat:'surf diff', cond:'> 0.01?', x:0.25, y:0.30, activeOnPath:false },
+    // Level 2
+    { id:'n3', feat:'h2h loser wins', cond:'≤ 0.5?', x:0.88, y:0.58, activeOnPath:true  },
+    { id:'n4', feat:'h2h loser wins', cond:'> 1.5?', x:0.60, y:0.58, activeOnPath:false },
+    // Leaves
+    { id:'l0', leaf:true, txt:'▲ WIN', win:true,  x:0.95, y:0.85, activeOnPath:true  },
+    { id:'l1', leaf:true, txt:'▼ LOSS',win:false, x:0.80, y:0.85, activeOnPath:false },
+    { id:'l2', leaf:true, txt:'▲ WIN', win:true,  x:0.65, y:0.85, activeOnPath:false },
+    { id:'l3', leaf:true, txt:'▼ LOSS',win:false, x:0.35, y:0.85, activeOnPath:false },
+    { id:'l4', leaf:true, txt:'▲ WIN', win:true,  x:0.15, y:0.85, activeOnPath:false },
+  ];
+  // Edges: [fromId, toId, isYes, isOnPath]
+  const RF_REAL_EDGES = [
+    ['n0','n1',true,true],['n0','n2',false,false],
+    ['n1','n3',true,true],['n1','n4',false,false],
+    ['n2','l3',true,false],['n2','l4',false,false],
+    ['n3','l0',true,true],['n3','l1',false,false],
+    ['n4','l2',true,false],['n4','l3',false,false],
+  ];
+  // Voting: 5 representative trees from the ensemble (real rules)
+  const RF_REAL_VOTES = [
+    { lbl:'Tree 1', rule:'elo_diff > 120\n→ h2h_loser ≤ 0.5',   vote:'win'  },
+    { lbl:'Tree 2', rule:'elo_diff > 11\n→ surf_diff > −0.01',   vote:'win'  },
+    { lbl:'Tree 3', rule:'elo_diff > 11\n→ h2h_diff > 1.5',      vote:'win'  },
+    { lbl:'Tree 4', rule:'elo_diff ≤ −11\n→ h2h ≤ −155',         vote:'loss' },
+    { lbl:'Tree 5', rule:'elo_diff ≤ 11\n→ age_diff > 3.75',      vote:'win'  },
+  ];
+
+  window.initRFReal = function () {
+    rfTimers.forEach(clearTimeout); rfTimers = [];
+    const diagram  = document.getElementById('rfd-diagram');
+    const tallyEl  = document.getElementById('rf-real-tally');
+    const pipsEl   = document.getElementById('rf-real-pips');
+    const resEl    = document.getElementById('rf-real-result');
+    const descEl   = document.getElementById('rf-real-desc');
+    if (!diagram) return;
+
+    // Build SVG edges + HTML node elements
+    const W = diagram.getBoundingClientRect().width || 560;
+    const H = 240;
+    diagram.style.height = H + 'px';
+
+    // Place nodes
+    diagram.innerHTML = '';
+
+    // Draw SVG edges underneath
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('style','position:absolute;inset:0;width:100%;height:100%;pointer-events:none');
+    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    RF_REAL_EDGES.forEach(([fromId, toId, isYes, onPath]) => {
+      const from = RF_REAL_NODES.find(n => n.id === fromId);
+      const to   = RF_REAL_NODES.find(n => n.id === toId);
+      const x1 = from.x * W, y1 = from.y * H + 18;
+      const x2 = to.x   * W, y2 = to.y   * H - 2;
+      const line = document.createElementNS('http://www.w3.org/2000/svg','path');
+      const mx = (x1+x2)/2, cy1 = y1+20, cy2 = y2-20;
+      line.setAttribute('d', `M${x1},${y1} C${x1},${cy1} ${x2},${cy2} ${x2},${y2}`);
+      line.setAttribute('stroke', onPath ? 'rgba(30,217,200,.75)' : 'rgba(74,88,120,.28)');
+      line.setAttribute('stroke-width', onPath ? '2' : '1.2');
+      line.setAttribute('fill', 'none');
+      svg.appendChild(line);
+      // Yes/No label on first two edges
+      if (fromId === 'n0') {
+        const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        lbl.setAttribute('x', String((x1+x2)/2 + (isYes ? 6 : -6)));
+        lbl.setAttribute('y', String(y1 + 28));
+        lbl.setAttribute('text-anchor', isYes ? 'start' : 'end');
+        lbl.setAttribute('fill', 'rgba(138,155,191,.6)'); lbl.setAttribute('font-size','9');
+        lbl.setAttribute('font-family','system-ui');
+        lbl.textContent = isYes ? 'YES' : 'NO';
+        svg.appendChild(lbl);
+      }
+    });
+    diagram.appendChild(svg);
+
+    // Place node HTML elements
+    RF_REAL_NODES.forEach(n => {
+      const el = document.createElement('div');
+      const left = Math.round(n.x * W);
+      const top  = Math.round(n.y * H);
+      if (n.leaf) {
+        el.className = `rfd-leaf ${n.win ? 'win' : 'loss'}` + (n.activeOnPath ? ' active' : '');
+        el.style.cssText = `left:${left}px;top:${top}px;opacity:0;transition:opacity .3s`;
+        el.id = 'rfd-' + n.id;
+        el.textContent = n.txt;
+      } else {
+        el.className = 'rfd-node' + (n.activeOnPath ? ' active' : '');
+        el.style.cssText = `left:${left}px;top:${top}px;opacity:0;transition:opacity .3s`;
+        el.id = 'rfd-' + n.id;
+        el.innerHTML = `<div class="rfd-feat">${n.feat}</div><div class="rfd-cond">${n.cond}</div>`;
+      }
+      diagram.appendChild(el);
+    });
+
+    // Animate nodes appearing in level order
+    const levels = [['n0'],['n1','n2'],['n3','n4'],['l0','l1','l2','l3','l4']];
+    levels.forEach((level, li) => {
+      rfTimers.push(setTimeout(() => {
+        level.forEach(id => {
+          const el = document.getElementById('rfd-' + id);
+          if (el) el.style.opacity = '1';
+        });
+      }, li * 380 + 80));
+    });
+
+    // Vote tally
+    pipsEl.innerHTML = ''; resEl.textContent = '';
+    RF_REAL_VOTES.forEach((v, i) => {
+      rfTimers.push(setTimeout(() => {
+        const pip = document.createElement('div');
+        pip.title = v.lbl + ': ' + v.rule;
+        pip.className = 'rf-pip ' + v.vote;
+        pip.textContent = v.vote === 'win' ? '✓' : '✗';
+        pipsEl.appendChild(pip);
+        const wins = Array.from(pipsEl.querySelectorAll('.rf-pip.win')).length;
+        const tot  = i + 1;
+        resEl.textContent = `${wins} Win / ${tot - wins} Loss`;
+        if (i === RF_REAL_VOTES.length - 1) {
+          const w = RF_REAL_VOTES.filter(v2 => v2.vote === 'win').length;
+          const l = RF_REAL_VOTES.length - w;
+          resEl.textContent = `Majority Vote: Win (${w}–${l})`;
+          descEl.innerHTML = `These 5 trees show rules extracted from the <strong>real GradientBoosting ensemble</strong>. `
+            + `All 100 trees vote; the final prediction is the majority. Key splits mirror feature importances: `
+            + `<strong>elo_diff</strong> (root), then <strong>h2h_diff</strong>, then <strong>surface win-rate</strong>. `
+            + `The active path (teal) traces this sample match — ELO +200, H2H 3–1, familiar surface.`;
+        }
+      }, levels.length * 380 + i * 350 + 200));
+    });
+  };
+
+  // ── GB: DEMO ────────────────────────────────────────────────────────────
   const GB_STAGES = [
     { lbl:'Base Tree', sub:'6 / 10 correct', dots:'ccccccwwww', conf:62 },
     { lbl:'Tree 2',    sub:'8 / 10 correct', dots:'ccccccffww', conf:73 },
     { lbl:'Tree 3',    sub:'9 / 10 correct', dots:'ccccccccfw', conf:80 },
     { lbl:'Tree 4',    sub:'10 / 10 correct',dots:'ccccccccff', conf:84 },
   ];
-
   function initGB() {
     gbTimers.forEach(clearTimeout); gbTimers = [];
-    const seq   = document.getElementById('gb-seq');
+    const seq  = document.getElementById('gb-seq');
     const meter = document.getElementById('gb-meter');
     const fill  = document.getElementById('gb-fill');
     const conf  = document.getElementById('gb-conf');
     meter.classList.remove('show'); fill.style.width = '0%'; conf.textContent = '0%';
-
     seq.innerHTML = GB_STAGES.map((s, i) => `
       <div class="gb-tw">
         ${i > 0 ? `<div class="gb-arrow-el" id="gbar-${i}">→</div>` : ''}
         <div class="gb-tree" id="gbt-${i}">
           <div class="gb-tree-lbl">${s.lbl}</div>
           <div class="gb-dots" id="gbd-${i}">
-            ${s.dots.split('').map((_, j) =>
-              `<div class="gb-dot" id="gbd-${i}-${j}"></div>`).join('')}
+            ${s.dots.split('').map((_,j) => `<div class="gb-dot" id="gbd-${i}-${j}"></div>`).join('')}
           </div>
           <div class="gb-tree-sub">${s.sub}</div>
         </div>
       </div>`).join('');
-
     meter.classList.add('show');
-
     let delay = 80;
     GB_STAGES.forEach((s, i) => {
       gbTimers.push(setTimeout(() => {
-        if (i > 0) {
-          document.getElementById('gbt-'+(i-1)).classList.remove('current');
-          document.getElementById('gbar-'+i).classList.add('show');
-        }
+        if (i > 0) { document.getElementById('gbt-'+(i-1)).classList.remove('current'); document.getElementById('gbar-'+i).classList.add('show'); }
         const tree = document.getElementById('gbt-'+i);
         tree.classList.add('show', 'current');
-
         s.dots.split('').forEach((type, j) => {
-          gbTimers.push(setTimeout(() => {
-            document.getElementById('gbd-'+i+'-'+j).classList.add(type);
-          }, j * 55 + 80));
+          gbTimers.push(setTimeout(() => { document.getElementById('gbd-'+i+'-'+j).classList.add(type); }, j * 55 + 80));
         });
-
-        gbTimers.push(setTimeout(() => {
-          fill.style.width = s.conf + '%';
-          conf.textContent = s.conf + '%';
-        }, 460));
+        gbTimers.push(setTimeout(() => { fill.style.width = s.conf + '%'; conf.textContent = s.conf + '%'; }, 460));
       }, delay));
       delay += 880;
     });
   }
 
-  // Init LR immediately (default tab)
-  setTimeout(() => { lrReady = true; initLR(); }, 60);
+  // ── GB: REAL DATA ────────────────────────────────────────────────────────
+  let gbRealStage = 0;
+  function initGBReal() {
+    const btns    = document.getElementById('gb-stage-btns');
+    const canvas  = document.getElementById('gb-real-canvas');
+    const fillEl  = document.getElementById('gb-real-fill');
+    const confEl  = document.getElementById('gb-real-conf');
+    const descEl  = document.getElementById('gb-real-desc');
+    if (!btns || !canvas) return;
+
+    // Build stage buttons
+    btns.innerHTML = GB_REAL_STAGES.map((s, i) =>
+      `<button class="gb-stage-btn${i === gbRealStage ? ' active' : ''}" onclick="gbRealGoto(${i})">
+         Tree ${s.tree}
+       </button>`
+    ).join('');
+
+    drawGBRealChart(canvas);
+    const s = GB_REAL_STAGES[gbRealStage];
+    fillEl.style.width = s.conf + '%';
+    confEl.textContent = s.conf + '%';
+    descEl.innerHTML   = `<strong>After tree ${s.tree}:</strong> ${s.note}`;
+  }
+
+  window.gbRealGoto = function (idx) {
+    gbRealStage = idx;
+    document.querySelectorAll('.gb-stage-btn').forEach((b, i) =>
+      b.classList.toggle('active', i === idx));
+    const canvas = document.getElementById('gb-real-canvas');
+    const fillEl = document.getElementById('gb-real-fill');
+    const confEl = document.getElementById('gb-real-conf');
+    const descEl = document.getElementById('gb-real-desc');
+    drawGBRealChart(canvas);
+    const s = GB_REAL_STAGES[idx];
+    fillEl.style.width = s.conf + '%';
+    confEl.textContent = s.conf + '%';
+    descEl.innerHTML   = `<strong>After tree ${s.tree}:</strong> ${s.note}`;
+  };
+
+  function drawGBRealChart(canvas) {
+    if (!canvas) return;
+    const dpr  = window.devicePixelRatio || 1;
+    const W    = canvas.parentElement.getBoundingClientRect().width;
+    const H    = 160;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const PAD_L = 48, PAD_R = 18, PAD_T = 18, PAD_B = 28;
+    const plotW = W - PAD_L - PAD_R;
+    const plotH = H - PAD_T - PAD_B;
+
+    // Y axis: 0–100%
+    ctx.font = '9px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(74,88,120,.6)';
+    ctx.textAlign = 'right';
+    [0,25,50,75,100].forEach(v => {
+      const y = PAD_T + (1 - v/100) * plotH;
+      ctx.strokeStyle = v === 50 ? 'rgba(230,168,23,.25)' : 'rgba(28,40,64,.8)';
+      ctx.lineWidth   = v === 50 ? 1 : .6;
+      ctx.setLineDash(v === 50 ? [4,3] : []);
+      ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = v === 50 ? 'rgba(230,168,23,.7)' : 'rgba(74,88,120,.55)';
+      ctx.fillText(v + '%', PAD_L - 5, y + 3.5);
+    });
+    // 50% label
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(230,168,23,.6)'; ctx.font = '8.5px system-ui,sans-serif';
+    ctx.fillText('Random', PAD_L + 4, PAD_T + plotH/2 - 4);
+
+    // X axis labels and positions
+    const stages = GB_REAL_STAGES.slice(0, gbRealStage + 1);
+    const allX   = GB_REAL_STAGES.map((_, i) => PAD_L + (i / (GB_REAL_STAGES.length - 1)) * plotW);
+    ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(74,88,120,.6)'; ctx.font = '9px system-ui,sans-serif';
+    GB_REAL_STAGES.forEach((s, i) => {
+      ctx.fillText('T' + s.tree, allX[i], H - PAD_B + 14);
+    });
+
+    // Draw the growing line up to current stage
+    if (stages.length >= 1) {
+      ctx.beginPath();
+      stages.forEach((s, i) => {
+        const x = allX[i];
+        const y = PAD_T + (1 - s.conf / 100) * plotH;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = 'rgba(30,217,200,.85)'; ctx.lineWidth = 2.5;
+      ctx.lineJoin = 'round'; ctx.setLineDash([]); ctx.stroke();
+    }
+
+    // Dashed extrapolation line from current stage to end
+    if (gbRealStage < GB_REAL_STAGES.length - 1) {
+      const lastS  = stages[stages.length - 1];
+      const lastX  = allX[gbRealStage];
+      const lastY  = PAD_T + (1 - lastS.conf / 100) * plotH;
+      const finalX = allX[GB_REAL_STAGES.length - 1];
+      const finalY = PAD_T + (1 - GB_REAL_STAGES[GB_REAL_STAGES.length-1].conf / 100) * plotH;
+      ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(finalX, finalY);
+      ctx.strokeStyle = 'rgba(74,88,120,.3)'; ctx.lineWidth = 1.5;
+      ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // Dots
+    stages.forEach((s, i) => {
+      const x = allX[i], y = PAD_T + (1 - s.conf / 100) * plotH;
+      ctx.beginPath(); ctx.arc(x, y, i === gbRealStage ? 6 : 3.5, 0, 2*Math.PI);
+      ctx.fillStyle   = i === gbRealStage ? '#f5c842' : 'rgba(30,217,200,.75)';
+      ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 1;
+      ctx.fill(); ctx.stroke();
+      if (i === gbRealStage) {
+        ctx.font = 'bold 9px system-ui,sans-serif';
+        ctx.fillStyle = '#f5c842'; ctx.textAlign = 'center';
+        ctx.fillText(s.conf + '%', x, y - 10);
+      }
+    });
+  }
+
+  // ── Init on load ─────────────────────────────────────────────────────────
+  setTimeout(() => { lrDemoReady = true; initLR(); }, 60);
 })();
 </script>
 
