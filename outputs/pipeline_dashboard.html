@@ -1171,6 +1171,29 @@ select.pred-input { cursor: pointer; }
 .pred-feat-diff.pos { color: var(--green); }
 .pred-feat-diff.neg { color: var(--red); }
 .pred-feat-diff.neu { color: var(--text-muted); }
+.pred-narrative {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--teal);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-sub);
+}
+.pred-narrative strong { color: var(--text); font-weight: 700; }
+.pred-narrative .toss-up { color: var(--amber-lt); font-weight: 700; }
+.pred-narrative .heavy-fav { color: var(--green); font-weight: 700; }
+.pred-impact-bar {
+  display: inline-flex; gap: 2px; align-items: center; padding: 3px 0;
+}
+.pred-impact-seg {
+  width: 8px; height: 8px; border-radius: 2px;
+  background: rgba(255,255,255,.08);
+}
+.pred-impact-seg.lit-amber { background: var(--amber); }
+.pred-impact-seg.lit-teal  { background: var(--teal-lt); }
 .pred-meta-row {
   display: flex; gap: 18px; flex-wrap: wrap;
   margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
@@ -1793,6 +1816,7 @@ select.pred-input { cursor: pointer; }
 
   <div class="pred-card" id="pred-card">
     <div class="pred-matchup" id="pred-matchup"></div>
+    <div class="pred-narrative" id="pred-narrative" style="display:none"></div>
     <div id="pred-factors"></div>
     <div class="pred-meta-row" id="pred-meta"></div>
   </div>
@@ -3212,6 +3236,83 @@ requestAnimationFrame(() => setTimeout(() => {
   };
 
   // ── Result card renderer ───────────────────────────────────
+  // Feature importance tiers — top 3 from model (days_rest_diff, elo_diff, h2h_diff) = high/amber
+  // Others from top-10 = medium/teal, rest = low
+  const FEAT_IMPACT = {
+    'rest_diff':      { level: 3, color: 'amber' },
+    'ELO rating':     { level: 3, color: 'amber' },
+    'H2H wins':       { level: 3, color: 'amber' },
+    'Form (90d)':     { level: 2, color: 'teal'  },
+    'World rank':     { level: 2, color: 'teal'  },
+  };
+  function impactBar(featKey) {
+    const imp = FEAT_IMPACT[featKey] || { level: 1, color: 'teal' };
+    const segs = [1,2,3].map(i =>
+      '<div class="pred-impact-seg' + (i <= imp.level ? ' lit-' + imp.color : '') + '"></div>'
+    ).join('');
+    return '<div class="pred-impact-bar">' + segs + '</div>';
+  }
+
+  function buildNarrative(f, prob1, short1, short2, surf) {
+    const sentences = [];
+    const fav    = prob1 >= 50 ? short1 : short2;
+    const und    = prob1 >= 50 ? short2 : short1;
+    const maxP   = Math.max(prob1, 100 - prob1);
+    const tossup = maxP < 56;
+    const heavy  = maxP >= 75;
+
+    // Opening: lead with dominant signal
+    const eloDiff    = Math.abs(+(f.elo_diff) || 0);
+    const restDiff   = Math.abs(+(f.rest_diff) || 0);
+    const h2hDiff    = Math.abs(+(f.h2h_diff) || 0);
+    const formDiff   = Math.abs(+(f.form_diff) || 0);
+    const surfDiff   = Math.abs(+(f.surface_wr_diff) || 0);
+
+    if (tossup) {
+      sentences.push('This is a <span class="toss-up">toss-up</span> — the model gives neither player a meaningful edge.');
+    } else if (heavy) {
+      sentences.push('<strong>' + fav + '</strong> is a <span class="heavy-fav">heavy favourite</span> at ' + maxP + '%.');
+    } else {
+      sentences.push('<strong>' + fav + '</strong> is the stronger pick at ' + maxP + '%.');
+    }
+
+    // Lead with the biggest driver
+    const drivers = [
+      { key: 'elo',  mag: eloDiff,  txt: () => 'The primary driver is a <strong>' + eloDiff + '-point ELO gap</strong> in ' + fav + '\'s favour.' },
+      { key: 'rest', mag: restDiff, txt: () => 'The biggest factor is rest: <strong>' + fav + ' has ' + restDiff + ' more recovery days</strong>.' },
+      { key: 'h2h',  mag: h2hDiff * 60, txt: () => '' }, // scaled to compare magnitude
+    ].sort((a, b) => b.mag - a.mag);
+    if (drivers[0].key === 'elo' && eloDiff >= 30) {
+      sentences.push(drivers[0].txt());
+    } else if (drivers[0].key === 'rest' && restDiff >= 2) {
+      sentences.push(drivers[0].txt());
+    }
+
+    // Surface mention
+    if (surfDiff >= 0.10) {
+      const surfFav = (+(f.surface_wr_diff) || 0) > 0 ? short1 : short2;
+      sentences.push('<strong>' + surfFav + '</strong> has a notable <strong>' + surf + ' surface advantage</strong> (' + (Math.round(surfDiff * 10) / 10).toFixed(1) + '% win-rate gap).');
+    }
+
+    // H2H mention
+    const h2pF = prob1 >= 50 ? (+(f.h2h_p1) || 0) : (+(f.h2h_p2) || 0);
+    const h2pU = prob1 >= 50 ? (+(f.h2h_p2) || 0) : (+(f.h2h_p1) || 0);
+    if (h2pF > 2 || h2pU > 2) {
+      const h2txt = h2pF > h2pU
+        ? '<strong>' + fav + '</strong> leads their head-to-head <strong>' + h2pF + '–' + h2pU + '</strong>.'
+        : '<strong>' + und + '</strong> actually leads the H2H <strong>' + h2pU + '–' + h2pF + '</strong>, which limits ' + fav + '\'s edge.';
+      sentences.push(h2txt);
+    }
+
+    // Form mention
+    if (formDiff >= 0.15) {
+      const formFav = (+(f.form_diff) || 0) > 0 ? short1 : short2;
+      sentences.push('<strong>' + formFav + '</strong> is in significantly better recent form (+' + Math.round(formDiff) + '% over 90 days).');
+    }
+
+    return sentences.join(' ');
+  }
+
   function renderCard(r, surf, lvl) {
     const prob1 = Math.min(100, Math.max(0, Math.round(+(r.player1_win_prob) || 50)));
     const prob2 = 100 - prob1;
@@ -3238,6 +3339,11 @@ requestAnimationFrame(() => setTimeout(() => {
     const short1 = p1.name.split(' ').pop();
     const short2 = p2.name.split(' ').pop();
 
+    // Narrative
+    const narEl = document.getElementById('pred-narrative');
+    narEl.innerHTML = buildNarrative(f, prob1, short1, short2, surf);
+    narEl.style.display = '';
+
     function diffCls(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu'; }
     function fv(v, unit) {
       if (v === null || v === undefined) return '<span class="pred-feat-val">—</span>';
@@ -3257,18 +3363,21 @@ requestAnimationFrame(() => setTimeout(() => {
       return '<span class="pred-feat-val" style="white-space:nowrap">' + v + '%' + chip + '</span>';
     }
 
+    // rows: [label, v1, v2, diff] — label also used as FEAT_IMPACT key
     const rows = [
-      ['ELO rating',   fv(f.p1_elo,''),         fv(f.p2_elo,''),        fd(f.elo_diff,'')],
-      ['World rank',   fv(f.p1_rank===null?'N/A':'#'+f.p1_rank,''),
-                       fv(f.p2_rank===null?'N/A':'#'+f.p2_rank,''),
-                       fd(f.rank_diff !== undefined ? -Math.round(f.rank_diff) : null,'')],
-      ['Form (90d)',   fvForm(f.p1_form, f.p1_months_inactive),
-                       fvForm(f.p2_form, f.p2_months_inactive),
-                       fd(f.form_diff,'%')],
-      [surf + ' WR',  fv(f.p1_surface_wr,'%'),  fv(f.p2_surface_wr,'%'), fd(f.surface_wr_diff,'%')],
-      ['H2H wins',    fv(f.h2h_p1,''),          fv(f.h2h_p2,''),       fd(f.h2h_diff,'')],
-      ['Rest diff',   '','',                     fd(f.rest_diff,' d')],
+      ['ELO rating',  fv(f.p1_elo,''),        fv(f.p2_elo,''),       fd(f.elo_diff,'')],
+      ['World rank',  fv(f.p1_rank===null?'N/A':'#'+f.p1_rank,''),
+                      fv(f.p2_rank===null?'N/A':'#'+f.p2_rank,''),
+                      fd(f.rank_diff !== undefined ? -Math.round(f.rank_diff) : null,'')],
+      ['Form (90d)',  fvForm(f.p1_form, f.p1_months_inactive),
+                      fvForm(f.p2_form, f.p2_months_inactive),
+                      fd(f.form_diff,'%')],
+      [surf + ' WR', fv(f.p1_surface_wr,'%'), fv(f.p2_surface_wr,'%'), fd(f.surface_wr_diff,'%')],
+      ['H2H wins',   fv(f.h2h_p1,''),         fv(f.h2h_p2,''),        fd(f.h2h_diff,'')],
+      ['rest_diff',  '','',                    fd(f.rest_diff,' d')],
     ];
+    // Display label for rest row (key differs from label for impact lookup)
+    const rowDisplay = rows.map(r2 => r2[0] === 'rest_diff' ? ['Rest diff', r2[1], r2[2], r2[3]] : r2);
 
     const lvlLabels = { G:'Grand Slam', M:'Masters', A:'Regular', F:'Tour Finals' };
     const tourLabel = (r.tour || predTour).toUpperCase();
@@ -3277,14 +3386,18 @@ requestAnimationFrame(() => setTimeout(() => {
     document.getElementById('pred-factors').innerHTML =
       '<div class="pred-feat-section">' +
         '<div class="pred-feat-hdr">Feature Values Used by Model</div>' +
-        '<div class="pred-feat-grid">' +
+        '<div class="pred-feat-grid" style="grid-template-columns:1.6fr 1fr 1fr 1fr 80px">' +
           '<div class="pred-feat-col-hdr">Feature</div>' +
           '<div class="pred-feat-col-hdr" style="text-align:right">' + short1 + '</div>' +
           '<div class="pred-feat-col-hdr" style="text-align:right">' + short2 + '</div>' +
           '<div class="pred-feat-col-hdr" style="text-align:right">&Delta; (P1&minus;P2)</div>' +
-          rows.map(([lbl,v1,v2,diff]) =>
-            '<div class="pred-feat-lbl">' + lbl + '</div>' + v1 + v2 + diff
-          ).join('') +
+          '<div class="pred-feat-col-hdr" style="text-align:right">Impact</div>' +
+          rows.map(([key, v1, v2, diff], i) => {
+            const dispLbl = rowDisplay[i][0];
+            const impKey  = key === 'rest_diff' ? 'rest_diff' : dispLbl;
+            return '<div class="pred-feat-lbl">' + dispLbl + '</div>' + v1 + v2 + diff +
+                   '<div style="text-align:right;padding:3px 0">' + impactBar(impKey) + '</div>';
+          }).join('') +
         '</div>' +
       '</div>';
 
